@@ -7,8 +7,7 @@ export default defineConfig({
   name: 'sylhera',
   title: 'Sylhera Studio',
 
-  // Replace with your Sanity project ID (find it at sanity.io/manage)
-  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'YOUR_PROJECT_ID',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'hnattvpc',
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
 
   plugins: [
