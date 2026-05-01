@@ -21,13 +21,6 @@
       "dest": "/$1"
     }
   ],
-  "env": {
-    "SANITY_PROJECT_ID": "@sanity-project-id",
-    "SANITY_DATASET": "@sanity-dataset",
-    "SANITY_WRITE_TOKEN": "@sanity-write-token",
-    "ALLOWED_ORIGIN": "@allowed-origin",
-    "NOTIFICATION_EMAIL": "@notification-email"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -75,7 +68,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.sanity.io"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'"
         }
       ]
     }

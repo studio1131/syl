@@ -6,16 +6,10 @@
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'Build complete'",
-    "deploy": "vercel --prod",
-    "sanity": "sanity dev"
+    "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@sanity/client": "^6.10.0",
     "@vercel/node": "^3.0.12"
-  },
-  "devDependencies": {
-    "sanity": "^3.22.0",
-    "@sanity/vision": "^3.22.0"
   },
   "engines": {
     "node": ">=18.0.0"
