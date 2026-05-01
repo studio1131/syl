@@ -12,11 +12,14 @@
   },
   "dependencies": {
     "@sanity/client": "^6.10.0",
-    "@vercel/node": "^3.0.12"
+    "@vercel/node": "^3.0.12",
+    "styled-components": "^6.4.1"
   },
   "devDependencies": {
-    "sanity": "^3.22.0",
-    "@sanity/vision": "^3.22.0"
+    "@sanity/vision": "^3.22.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sanity": "^3.22.0"
   },
   "engines": {
     "node": ">=18.0.0"

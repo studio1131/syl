@@ -29,7 +29,7 @@ Thumbs.db
 *.swo
 *~
 
-# Build outputs
+# Build outputs (studio-build/ is intentionally committed for Vercel deployment)
 dist/
 build/
 out/

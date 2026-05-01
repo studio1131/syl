@@ -9,6 +9,7 @@ export default defineConfig({
 
   projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'hnattvpc',
   dataset: process.env.SANITY_STUDIO_DATASET || 'production',
+  basePath: '/studio',
 
   plugins: [
     structureTool({
