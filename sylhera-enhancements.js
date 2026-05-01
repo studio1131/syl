@@ -1,524 +1,731 @@
 // ====================================================================
-// SYLHERA ENHANCEMENTS - Audio Players, Blog & Request Forms
+// SYLHERA ENHANCEMENTS
+// Loads CMS content from Sanity then builds Playground, Fragments,
+// Totems, and wires up the Contact form.
+// Falls back to hardcoded data when Sanity is not configured.
 // ====================================================================
 
-// ==================== AUDIO PLAYERS (PLAYGROUND) ====================
+// ==================== SANITY CONTENT LOADER ====================
 
-var TRACKS = [
-  {n:'01', ti:'Nuit Magnétique', ge:'Dark Ambient', dk:true, duration:222, url:''},
-  {n:'02', ti:'Carnivore Dreams', ge:'Experimental', dk:false, duration:198, url:''},
-  {n:'03', ti:'Third Eye Opening', ge:'Drone / Ritual', dk:true, duration:245, url:''},
-  {n:'04', ti:'Immensité', ge:'Ambient', dk:false, duration:312, url:''},
-  {n:'05', ti:'Vanitas Echo', ge:'Sound Art', dk:true, duration:178, url:''},
-  {n:'06', ti:'Visage Brut', ge:'Industrial', dk:false, duration:256, url:''},
-  {n:'07', ti:'Masque Ceremony', ge:'Ritual Ambient', dk:true, duration:289, url:''},
-  {n:'08', ti:'Stellar Descent', ge:'Experimental', dk:false, duration:201, url:''},
-  {n:'09', ti:'Pulse of Stone', ge:'Dark Ambient', dk:true, duration:234, url:''}
-];
+var SANITY_CONTENT = null
 
-var currentlyPlaying = -1;
-var audioElement = null;
-var progressInterval = null;
+async function loadSanityContent() {
+  try {
+    var res = await fetch('/api/content')
+    if (!res.ok) return null
+    var data = await res.json()
+    SANITY_CONTENT = data
+    return data
+  } catch (e) {
+    return null
+  }
+}
+
+function portableTextToHtml(blocks) {
+  if (!Array.isArray(blocks)) return ''
+  return blocks.map(function (block) {
+    if (!block || block._type !== 'block') return ''
+    var text = (block.children || []).map(function (child) {
+      var t = (child.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      var marks = child.marks || []
+      if (marks.indexOf('strong') > -1) t = '<strong>' + t + '</strong>'
+      if (marks.indexOf('em')     > -1) t = '<em>' + t + '</em>'
+      if (marks.indexOf('code')   > -1) t = '<code>' + t + '</code>'
+      return t
+    }).join('')
+    switch (block.style) {
+      case 'h2':         return '<h2>' + text + '</h2>'
+      case 'h3':         return '<h3>' + text + '</h3>'
+      case 'blockquote': return '<blockquote>' + text + '</blockquote>'
+      default:           return '<p>' + text + '</p>'
+    }
+  }).join('\n')
+}
+
+function fmtDate(iso) {
+  if (!iso) return ''
+  var d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function pad2(n) {
+  return (n < 10 ? '0' : '') + n
+}
+
+// ==================== SITE SETTINGS ====================
+
+function applySiteSettings(s) {
+  if (!s) return
+  if (s.faviconUrl) {
+    var fav = document.querySelector("link[rel='icon']") || document.querySelector("link[rel='shortcut icon']")
+    if (fav) {
+      fav.href = s.faviconUrl
+    } else {
+      var link = document.createElement('link')
+      link.rel = 'icon'
+      link.href = s.faviconUrl
+      document.head.appendChild(link)
+    }
+  }
+  if (s.logoUrl) {
+    var img = document.querySelector('.n-mark img')
+    if (img) img.src = s.logoUrl
+  }
+  if (s.siteTitle) {
+    var logoText = document.querySelector('.n-logo')
+    if (logoText) {
+      var mark = logoText.querySelector('.n-mark')
+      logoText.textContent = s.siteTitle
+      if (mark) logoText.prepend(mark)
+    }
+  }
+}
+
+// ==================== HOMEPAGE IMAGES ====================
+
+function applyHomepageImages(images) {
+  if (!images || !images.length) return
+  var cells = document.querySelectorAll('#pg-home .ab-cell')
+  images.forEach(function (img, idx) {
+    if (!cells[idx] || !img.imageUrl) return
+    var artEl = cells[idx].querySelector('.ab-art-img, .ab-art')
+    if (artEl) {
+      artEl.className = 'ab-art-img'
+      artEl.innerHTML = '<img src="' + img.imageUrl + '" alt="' + (img.title || '') + '" style="width:100%;height:100%;object-fit:cover;display:block;">'
+    }
+    var tagEl   = cells[idx].querySelector('.ab-tag')
+    var titleEl = cells[idx].querySelector('.ab-title')
+    if (tagEl   && img.tag)   tagEl.textContent   = img.tag
+    if (titleEl && img.title) titleEl.textContent = img.title
+  })
+}
+
+// ==================== UNIVERSE IMAGES ====================
+
+function applyUniverseImages(images) {
+  if (!images || !images.length) return
+  var masonry = document.getElementById('univ-masonry')
+  if (!masonry) return
+  masonry.innerHTML = ''
+  images.forEach(function (img) {
+    var item = document.createElement('div')
+    item.className = 'univ-item univ-item-img'
+    item.style.position = 'relative'
+    item.innerHTML =
+      '<img src="' + img.imageUrl + '" alt="' + (img.title || '') + '" style="width:100%;display:block;">' +
+      '<div class="univ-cap">' + (img.caption || img.title || '') + '</div>'
+    item.addEventListener('mouseenter', function () { if (typeof ch === 'function') ch(true)  })
+    item.addEventListener('mouseleave', function () { if (typeof ch === 'function') ch(false) })
+    masonry.appendChild(item)
+  })
+}
+
+// ==================== AUDIO PLAYER (PLAYGROUND) ====================
+
+var TRACKS_FALLBACK = [
+  { n:'01', ti:'Nuit Magnétique',  ge:'Dark Ambient',   dk:true,  duration:222, url:'' },
+  { n:'02', ti:'Carnivore Dreams', ge:'Experimental',   dk:false, duration:198, url:'' },
+  { n:'03', ti:'Third Eye Opening',ge:'Drone / Ritual', dk:true,  duration:245, url:'' },
+  { n:'04', ti:'Immensité',        ge:'Ambient',        dk:false, duration:312, url:'' },
+  { n:'05', ti:'Vanitas Echo',     ge:'Sound Art',      dk:true,  duration:178, url:'' },
+  { n:'06', ti:'Visage Brut',      ge:'Industrial',     dk:false, duration:256, url:'' },
+  { n:'07', ti:'Masque Ceremony',  ge:'Ritual Ambient', dk:true,  duration:289, url:'' },
+  { n:'08', ti:'Stellar Descent',  ge:'Experimental',   dk:false, duration:201, url:'' },
+  { n:'09', ti:'Pulse of Stone',   ge:'Dark Ambient',   dk:true,  duration:234, url:'' }
+]
+
+var currentlyPlaying  = -1
+var audioObjects      = {}
+var progressInterval  = null
+var ACTIVE_TRACKS     = TRACKS_FALLBACK
+
+function formatTime(seconds) {
+  seconds = Math.floor(seconds) || 0
+  return Math.floor(seconds / 60) + ':' + pad2(seconds % 60)
+}
 
 function buildPlay() {
-  var grid = document.getElementById('mgrid');
-  if (!grid) return;
-  
-  for (var i = 0; i < TRACKS.length; i++) {
-    var t = TRACKS[i];
-    var track = document.createElement('div');
-    track.className = 'track' + (t.dk ? ' dk' : '');
-    track.dataset.index = i;
-    
-    // Generate waveform bars
-    var waveHtml = '<div class="t-wave">';
+  var grid = document.getElementById('mgrid')
+  if (!grid) return
+  grid.innerHTML = ''
+  audioObjects = {}
+  currentlyPlaying = -1
+
+  ACTIVE_TRACKS = (SANITY_CONTENT && SANITY_CONTENT.tracks && SANITY_CONTENT.tracks.length)
+    ? SANITY_CONTENT.tracks.map(function (t, i) {
+        return {
+          n:        t.trackNumber || pad2(i + 1),
+          ti:       t.title,
+          ge:       t.genre || '',
+          dk:       !!t.dark,
+          duration: t.duration || 0,
+          url:      t.audioUrl || ''
+        }
+      })
+    : TRACKS_FALLBACK
+
+  ACTIVE_TRACKS.forEach(function (t, i) {
+    var track = document.createElement('div')
+    track.className = 'track' + (t.dk ? ' dk' : '')
+    track.dataset.index = i
+
+    var waveHtml = '<div class="t-wave">'
     for (var b = 0; b < 24; b++) {
-      var h = 20 + Math.random() * 80;
-      waveHtml += '<div class="t-b" style="height:' + h + '%"></div>';
+      waveHtml += '<div class="t-b" style="height:' + (20 + Math.random() * 80) + '%"></div>'
     }
-    waveHtml += '</div>';
-    
-    var durationStr = formatTime(t.duration);
-    
-    track.innerHTML = 
-      '<div class="t-n">' + t.n + '</div>' +
+    waveHtml += '</div>'
+
+    var durStr = t.duration > 0 ? formatTime(t.duration) : '--:--'
+
+    track.innerHTML =
+      '<div class="t-n">'  + t.n  + '</div>' +
       '<div class="t-ti">' + t.ti + '</div>' +
       '<div class="t-ge">' + t.ge + '</div>' +
       waveHtml +
       '<div class="t-foot">' +
         '<button class="t-pl" onclick="togglePlay(' + i + ')">' +
-          '<svg class="t-pi" width="12" height="12" viewBox="0 0 12 12"><path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/></svg>' +
+          '<svg class="t-pi" width="12" height="12" viewBox="0 0 12 12">' +
+            '<path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/>' +
+          '</svg>' +
         '</button>' +
-        '<div class="t-du" id="duration-' + i + '">0:00 / ' + durationStr + '</div>' +
-        '<div class="t-tg">' + t.ge.split(' ')[0] + '</div>' +
+        '<div class="t-du" id="duration-' + i + '">0:00 / ' + durStr + '</div>' +
+        '<div class="t-tg">' + (t.ge.split(' ')[0] || '') + '</div>' +
       '</div>' +
-      '<div class="t-prog" id="prog-' + i + '"></div>';
-    
-    track.addEventListener('mouseenter', function() { ch(true); });
-    track.addEventListener('mouseleave', function() { ch(false); });
-    grid.appendChild(track);
+      '<div class="t-prog" id="prog-' + i + '"></div>'
+
+    track.addEventListener('mouseenter', function () { if (typeof ch === 'function') ch(true)  })
+    track.addEventListener('mouseleave', function () { if (typeof ch === 'function') ch(false) })
+    grid.appendChild(track)
+  })
+}
+
+function getAudioObj(idx) {
+  var t = ACTIVE_TRACKS[idx]
+  if (!t || !t.url) return null
+  if (!audioObjects[idx]) {
+    var audio = new Audio(t.url)
+    audio.addEventListener('timeupdate', function () {
+      if (currentlyPlaying !== idx) return
+      var dur = audio.duration || t.duration || 1
+      var pct = (audio.currentTime / dur) * 100
+      var p = document.getElementById('prog-' + idx)
+      var d = document.getElementById('duration-' + idx)
+      if (p) p.style.width = pct + '%'
+      if (d) d.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(dur)
+    })
+    audio.addEventListener('ended', function () {
+      var trackEls = document.querySelectorAll('.track')
+      if (trackEls[idx]) trackEls[idx].classList.remove('playing')
+      updatePlayButton(idx, false)
+      var p = document.getElementById('prog-' + idx)
+      if (p) p.style.width = '0%'
+      currentlyPlaying = -1
+    })
+    audioObjects[idx] = audio
   }
+  return audioObjects[idx]
 }
 
 function togglePlay(idx) {
-  var tracks = document.querySelectorAll('.track');
-  
+  var trackEls = document.querySelectorAll('.track')
+
   if (currentlyPlaying === idx) {
-    // Pause current track
-    if (audioElement) {
-      audioElement.pause();
-    }
-    tracks[idx].classList.remove('playing');
-    clearInterval(progressInterval);
-    currentlyPlaying = -1;
-    updatePlayButton(idx, false);
+    var a = getAudioObj(idx)
+    if (a) a.pause(); else clearInterval(progressInterval)
+    trackEls[idx].classList.remove('playing')
+    currentlyPlaying = -1
+    updatePlayButton(idx, false)
+    return
+  }
+
+  if (currentlyPlaying >= 0) {
+    var prev = getAudioObj(currentlyPlaying)
+    if (prev) prev.pause(); else clearInterval(progressInterval)
+    trackEls[currentlyPlaying].classList.remove('playing')
+    updatePlayButton(currentlyPlaying, false)
+    var pp = document.getElementById('prog-' + currentlyPlaying)
+    if (pp) pp.style.width = '0%'
+  }
+
+  trackEls[idx].classList.add('playing')
+  currentlyPlaying = idx
+  updatePlayButton(idx, true)
+
+  var audio = getAudioObj(idx)
+  if (audio) {
+    audio.play().catch(function () {})
   } else {
-    // Stop previous track
-    if (currentlyPlaying >= 0) {
-      tracks[currentlyPlaying].classList.remove('playing');
-      updatePlayButton(currentlyPlaying, false);
-      document.getElementById('prog-' + currentlyPlaying).style.width = '0%';
-    }
-    
-    // Play new track
-    tracks[idx].classList.add('playing');
-    currentlyPlaying = idx;
-    updatePlayButton(idx, true);
-    
-    // Simulate audio playback (replace with real audio when files available)
-    simulateAudioPlayback(idx);
+    simulateAudioPlayback(idx)
   }
 }
 
-function updatePlayButton(idx, isPlaying) {
-  var btn = document.querySelectorAll('.track')[idx].querySelector('.t-pl');
-  var icon = btn.querySelector('.t-pi');
-  
-  if (isPlaying) {
-    icon.innerHTML = '<rect x="3" y="2" width="2" height="8"/><rect x="7" y="2" width="2" height="8"/>';
-  } else {
-    icon.innerHTML = '<path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/>';
-  }
+function updatePlayButton(idx, playing) {
+  var trackEls = document.querySelectorAll('.track')
+  if (!trackEls[idx]) return
+  var icon = trackEls[idx].querySelector('.t-pi')
+  if (!icon) return
+  icon.innerHTML = playing
+    ? '<rect x="3" y="2" width="2" height="8"/><rect x="7" y="2" width="2" height="8"/>'
+    : '<path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/>'
 }
 
 function simulateAudioPlayback(idx) {
-  var track = TRACKS[idx];
-  var duration = track.duration;
-  var elapsed = 0;
-  
-  clearInterval(progressInterval);
-  
-  progressInterval = setInterval(function() {
-    if (currentlyPlaying !== idx) {
-      clearInterval(progressInterval);
-      return;
-    }
-    
-    elapsed++;
-    var pct = (elapsed / duration) * 100;
-    document.getElementById('prog-' + idx).style.width = pct + '%';
-    document.getElementById('duration-' + idx).textContent = formatTime(elapsed) + ' / ' + formatTime(duration);
-    
+  var t = ACTIVE_TRACKS[idx]
+  var duration = t ? (t.duration || 0) : 0
+  var elapsed  = 0
+  clearInterval(progressInterval)
+  if (!duration) return
+  progressInterval = setInterval(function () {
+    if (currentlyPlaying !== idx) { clearInterval(progressInterval); return }
+    elapsed++
+    var p = document.getElementById('prog-' + idx)
+    var d = document.getElementById('duration-' + idx)
+    if (p) p.style.width = ((elapsed / duration) * 100) + '%'
+    if (d) d.textContent = formatTime(elapsed) + ' / ' + formatTime(duration)
     if (elapsed >= duration) {
-      clearInterval(progressInterval);
-      document.querySelectorAll('.track')[idx].classList.remove('playing');
-      updatePlayButton(idx, false);
-      document.getElementById('prog-' + idx).style.width = '0%';
-      currentlyPlaying = -1;
+      clearInterval(progressInterval)
+      var trackEls = document.querySelectorAll('.track')
+      if (trackEls[idx]) trackEls[idx].classList.remove('playing')
+      updatePlayButton(idx, false)
+      if (p) p.style.width = '0%'
+      currentlyPlaying = -1
     }
-  }, 1000);
-}
-
-function formatTime(seconds) {
-  var min = Math.floor(seconds / 60);
-  var sec = seconds % 60;
-  return min + ':' + (sec < 10 ? '0' : '') + sec;
+  }, 1000)
 }
 
 // ==================== BLOG ARTICLES (FRAGMENTS) ====================
 
-var ARTICLES = [
+var ARTICLES_FALLBACK = [
   {
-    n: '01',
-    ti: 'On Silence as Material',
-    tg: 'Sound Theory',
-    dt: 'Dec 2024',
-    body: `
-      <p>Silence is not absence. It's the canvas on which sound becomes visible.</p>
-      <p>When Cage sat in the anechoic chamber, he didn't find silence. He found his nervous system — the high whine of consciousness, the low rumble of blood. <em>The body refuses to be quiet.</em></p>
-      <h3>The Paradox</h3>
-      <p>We call it "silence" when we mean "the sounds we've learned to ignore." The hum of refrigerators. The distant traffic. The room tone that every film editor knows is never truly silent.</p>
-      <p>In my work, I don't use silence. I use <strong>controlled emptiness</strong>. Space that has been cleared, intentionally. Like a sculptor removing material until only the necessary remains.</p>
-      <div class="af-rule"></div>
-      <p>This is not minimalism. This is maximum attention to what persists when everything decorative has been stripped away.</p>
-    `
+    n:'01', ti:'On Silence as Material', tg:'Sound Theory', dt:'Dec 2024',
+    body:`<p>Silence is not absence. It's the canvas on which sound becomes visible.</p>
+<p>When Cage sat in the anechoic chamber, he didn't find silence. He found his nervous system — the high whine of consciousness, the low rumble of blood. <em>The body refuses to be quiet.</em></p>
+<h3>The Paradox</h3>
+<p>We call it "silence" when we mean "the sounds we've learned to ignore." The hum of refrigerators. The distant traffic.</p>
+<p>In my work, I don't use silence. I use <strong>controlled emptiness</strong> — space that has been cleared, intentionally.</p>
+<div class="af-rule"></div>
+<p>This is not minimalism. This is maximum attention to what persists when everything decorative has been stripped away.</p>`
   },
   {
-    n: '02',
-    ti: 'The Uncanny Valley of Branding',
-    tg: 'Business',
-    dt: 'Nov 2024',
-    body: `
-      <p>Most brands today exist in aesthetic purgatory. They're not quite human, not quite machine. Just human enough to feel fake.</p>
-      <p>The tell: when companies write like they're reading a script someone else wrote about "authenticity" and "community." <em>The harder they try, the more automated they sound.</em></p>
-      <h3>Why This Happens</h3>
-      <p>Because most brand language is built backwards. They start with what they want to project, then work backward to find a voice that might project it. Result: a synthetic personality assembled from competitor analysis and focus groups.</p>
-      <p><strong>Real voice</strong> doesn't work like that. It emerges when you're trying to solve a specific problem for a specific person.</p>
-      <div class="af-rule"></div>
-      <p>Stop asking "what do we want to sound like?" Start asking "what do we actually think?"</p>
-    `
+    n:'02', ti:'The Uncanny Valley of Branding', tg:'Business', dt:'Nov 2024',
+    body:`<p>Most brands today exist in aesthetic purgatory. They're not quite human, not quite machine. Just human enough to feel fake.</p>
+<p>The tell: when companies write like they're reading a script about "authenticity." <em>The harder they try, the more automated they sound.</em></p>
+<h3>Why This Happens</h3>
+<p>Because most brand language is built backwards. They start with what they want to project, then work backward.</p>
+<p><strong>Real voice</strong> doesn't work like that. It emerges when you're solving a specific problem for a specific person.</p>
+<div class="af-rule"></div>
+<p>Stop asking "what do we want to sound like?" Start asking "what do we actually think?"</p>`
   },
   {
-    n: '03',
-    ti: 'Fashion as Armor',
-    tg: 'Fashion',
-    dt: 'Oct 2024',
-    body: `
-      <p>We talk about self-expression. But what we wear is mostly protection.</p>
-      <p>From weather. From judgment. From being seen too clearly. <em>Clothing is a controlled reveal.</em></p>
-      <h3>The Uniform</h3>
-      <p>Everyone has one. The outfit they default to when they don't want to think. It's not about fashion — it's about <strong>cognitive efficiency</strong>.</p>
-      <p>Steve Jobs knew this. So did Karl Lagerfeld. When you solve the question once, you free up everything else.</p>
-      <div class="af-rule"></div>
-      <p>The best style is whatever lets you forget about it entirely and focus on the work.</p>
-    `
+    n:'03', ti:'Fashion as Armor', tg:'Fashion', dt:'Oct 2024',
+    body:`<p>We talk about self-expression. But what we wear is mostly protection.</p>
+<p>From weather. From judgment. From being seen too clearly. <em>Clothing is a controlled reveal.</em></p>
+<h3>The Uniform</h3>
+<p>Everyone has one. The outfit they default to when they don't want to think. It's about <strong>cognitive efficiency</strong>.</p>
+<div class="af-rule"></div>
+<p>The best style is whatever lets you forget about it entirely and focus on the work.</p>`
   },
   {
-    n: '04',
-    ti: 'Against Creativity',
-    tg: 'Philosophy',
-    dt: 'Sep 2024',
-    body: `
-      <p>"Creativity" is a trap. It makes art sound optional. A personality trait. Something you either have or don't.</p>
-      <p>Art is not self-expression. It's <em>necessity made visible.</em> You make things because something demands to be externalized. Because keeping it inside would be worse.</p>
-      <h3>The Real Question</h3>
-      <p>Not "am I creative?" But: "what problem am I solving?" Every piece of art solves a problem. Usually the artist's problem. Sometimes the world's.</p>
-      <p><strong>Good art</strong> is when those two problems align.</p>
-    `
+    n:'04', ti:'Against Creativity', tg:'Philosophy', dt:'Sep 2024',
+    body:`<p>"Creativity" is a trap. It makes art sound optional. A personality trait.</p>
+<p>Art is not self-expression. It's <em>necessity made visible.</em></p>
+<h3>The Real Question</h3>
+<p>Not "am I creative?" But: "what problem am I solving?" Every piece of art solves a problem.</p>
+<p><strong>Good art</strong> is when the artist's problem and the world's problem align.</p>`
   },
   {
-    n: '05',
-    ti: 'The Attention Economy Is a Lie',
-    tg: 'Culture',
-    dt: 'Aug 2024',
-    body: `
-      <p>We don't have an attention deficit. We have a <strong>meaning surplus</strong>. Too many things demanding we find them significant. Too few that actually are.</p>
-      <p>The crisis isn't that people can't focus. It's that focusing on most things is actively punished with boredom.</p>
-      <h3>What Actually Works</h3>
-      <p>Make things that justify the attention they demand. Make things people want to stay with. <em>Not because they're addictive. Because they're nourishing.</em></p>
-      <div class="af-rule"></div>
-      <p>The attention economy isn't about capturing attention. It's about deserving it.</p>
-    `
+    n:'05', ti:'The Attention Economy Is a Lie', tg:'Culture', dt:'Aug 2024',
+    body:`<p>We don't have an attention deficit. We have a <strong>meaning surplus</strong>.</p>
+<p>The crisis isn't that people can't focus. It's that focusing on most things is actively punished with boredom.</p>
+<h3>What Actually Works</h3>
+<p>Make things that justify the attention they demand. <em>Not because they're addictive. Because they're nourishing.</em></p>
+<div class="af-rule"></div>
+<p>The attention economy isn't about capturing attention. It's about deserving it.</p>`
   },
   {
-    n: '06',
-    ti: 'Process Over Product',
-    tg: 'Psychology',
-    dt: 'Jul 2024',
-    body: `
-      <p>Everyone wants the finished thing. No one wants to do the work. This is the entire economy.</p>
-      <p>But here's what they don't tell you: <em>the work is the point.</em> The product is just evidence that work happened.</p>
-      <h3>The Paradox</h3>
-      <p>When you focus on product, you get neither good product nor good process. You get shortcuts, anxiety, and mediocre results.</p>
-      <p>When you focus on process, you get both. The work becomes intrinsically rewarding. The product improves as a side effect.</p>
-      <p><strong>The goal is to build a process you never want to leave.</strong></p>
-    `
+    n:'06', ti:'Process Over Product', tg:'Psychology', dt:'Jul 2024',
+    body:`<p>Everyone wants the finished thing. No one wants to do the work. This is the entire economy.</p>
+<p><em>The work is the point.</em> The product is just evidence that work happened.</p>
+<h3>The Paradox</h3>
+<p>When you focus on process, you get both quality work and a better product as a side effect.</p>
+<p><strong>The goal is to build a process you never want to leave.</strong></p>`
   },
   {
-    n: '07',
-    ti: 'Taste Is Memory',
-    tg: 'Culture',
-    dt: 'Jun 2024',
-    body: `
-      <p>Everyone thinks taste is about the present. What you like now. What aesthetics you respond to today.</p>
-      <p>But taste is actually <em>compression of past experience.</em> Every judgment you make contains every aesthetic decision you've ever witnessed, internalized, rejected, or accepted.</p>
-      <h3>How It Forms</h3>
-      <p>Slowly. Through repeated exposure to quality. Not quality as measured by others — quality as measured by internal coherence.</p>
-      <p>Good taste means you've seen enough to recognize what works <strong>for you</strong>, regardless of trends.</p>
-    `
+    n:'07', ti:'Taste Is Memory', tg:'Culture', dt:'Jun 2024',
+    body:`<p>Taste is actually <em>compression of past experience.</em> Every judgment contains every aesthetic decision you've ever made.</p>
+<h3>How It Forms</h3>
+<p>Slowly. Through repeated exposure to quality. Not quality as measured by others.</p>
+<p>Good taste means you've seen enough to recognize what works <strong>for you</strong>, regardless of trends.</p>`
   },
   {
-    n: '08',
-    ti: 'The Death of Mystery',
-    tg: 'Philosophy',
-    dt: 'May 2024',
-    body: `
-      <p>Everything is explained now. Every band has an origin story. Every artist has a process video. Every product has "behind the scenes."</p>
-      <p>We traded mystery for <em>access</em>. And in the process, we killed the very thing that made art magnetic.</p>
-      <h3>What We Lost</h3>
-      <p>The space to project. To imagine. To fill in blanks with our own meaning. Modern transparency leaves no room for interpretation.</p>
-      <p><strong>The best work still refuses to explain itself.</strong> It just exists. Take it or leave it.</p>
-      <div class="af-rule"></div>
-      <p>Mystery isn't withholding. It's respecting the work enough to let it speak for itself.</p>
-    `
+    n:'08', ti:'The Death of Mystery', tg:'Philosophy', dt:'May 2024',
+    body:`<p>Everything is explained now. Every band has an origin story. Every artist has a process video.</p>
+<p>We traded mystery for <em>access</em>. And in the process, we killed what made art magnetic.</p>
+<h3>What We Lost</h3>
+<p>The space to project. To imagine. To fill in blanks with our own meaning.</p>
+<p><strong>The best work still refuses to explain itself.</strong></p>
+<div class="af-rule"></div>
+<p>Mystery isn't withholding. It's respecting the work enough to let it speak for itself.</p>`
   }
-];
+]
 
-var currentArticle = 0;
+var currentArticle  = 0
+var ACTIVE_ARTICLES = ARTICLES_FALLBACK
 
 function buildArticles() {
-  var list = document.getElementById('art-list');
-  if (!list) return;
-  
-  for (var i = 0; i < ARTICLES.length; i++) {
-    var a = ARTICLES[i];
-    var row = document.createElement('div');
-    row.className = 'art-row';
-    row.dataset.index = i;
-    row.onclick = function() { openArticle(parseInt(this.dataset.index)); };
-    
+  var list = document.getElementById('art-list')
+  if (!list) return
+  list.innerHTML = ''
+
+  ACTIVE_ARTICLES = (SANITY_CONTENT && SANITY_CONTENT.posts && SANITY_CONTENT.posts.length)
+    ? SANITY_CONTENT.posts.map(function (p, i) {
+        return {
+          n:    pad2(i + 1),
+          ti:   p.title,
+          tg:   p.tag || '',
+          dt:   fmtDate(p.publishedAt),
+          body: portableTextToHtml(p.body) || ('<p>' + (p.excerpt || '') + '</p>')
+        }
+      })
+    : ARTICLES_FALLBACK
+
+  ACTIVE_ARTICLES.forEach(function (a, i) {
+    var row = document.createElement('div')
+    row.className = 'art-row'
+    row.dataset.index = i
+    row.onclick = function () { openArticle(parseInt(this.dataset.index)) }
     row.innerHTML =
-      '<div class="a-n">' + a.n + '</div>' +
+      '<div class="a-n">'  + a.n  + '</div>' +
       '<div class="a-ti">' + a.ti + '</div>' +
       '<div class="a-tg">' + a.tg + '</div>' +
-      '<div class="a-dt">' + a.dt + '</div>';
-    
-    row.addEventListener('mouseenter', function() { ch(true); });
-    row.addEventListener('mouseleave', function() { ch(false); });
-    list.appendChild(row);
-  }
+      '<div class="a-dt">' + a.dt + '</div>'
+    row.addEventListener('mouseenter', function () { if (typeof ch === 'function') ch(true)  })
+    row.addEventListener('mouseleave', function () { if (typeof ch === 'function') ch(false) })
+    list.appendChild(row)
+  })
 }
 
 function openArticle(idx) {
-  currentArticle = idx;
-  var a = ARTICLES[idx];
-  
-  document.getElementById('af-meta').textContent = a.tg.toUpperCase() + ' · ' + a.dt.toUpperCase();
-  document.getElementById('af-title').textContent = a.ti;
-  document.getElementById('af-body').innerHTML = a.body;
-  
-  var nextIdx = (idx + 1) % ARTICLES.length;
-  document.getElementById('af-next-title').textContent = ARTICLES[nextIdx].ti;
-  
-  document.getElementById('art-full').classList.add('open');
-  document.getElementById('art-full').scrollTop = 0;
+  currentArticle = idx
+  var a = ACTIVE_ARTICLES[idx]
+  document.getElementById('af-meta').textContent  = (a.tg || '').toUpperCase() + ' · ' + (a.dt || '').toUpperCase()
+  document.getElementById('af-title').textContent = a.ti
+  document.getElementById('af-body').innerHTML    = a.body
+  var nextIdx = (idx + 1) % ACTIVE_ARTICLES.length
+  document.getElementById('af-next-title').textContent = ACTIVE_ARTICLES[nextIdx].ti
+  var el = document.getElementById('art-full')
+  el.classList.add('open')
+  el.scrollTop = 0
 }
 
 function closeArticle() {
-  document.getElementById('art-full').classList.remove('open');
+  document.getElementById('art-full').classList.remove('open')
 }
 
 function nextArticle() {
-  currentArticle = (currentArticle + 1) % ARTICLES.length;
-  openArticle(currentArticle);
+  currentArticle = (currentArticle + 1) % ACTIVE_ARTICLES.length
+  openArticle(currentArticle)
 }
 
-// ==================== TOTEMS WITH REQUEST MODAL ====================
+// ==================== TOTEMS + REQUEST MODAL ====================
 
-var PRODUCTS = [
-  {
-    name: 'Obsidian Mirror',
-    price: 'On Request',
-    det: 'Volcanic glass · Scrying tool',
-    desc: 'Hand-polished obsidian mirror for contemplation and shadow work. Each piece unique, approximately 15cm diameter, mounted on consecrated wood base.',
-    ai: 10
-  },
-  {
-    name: 'Sigil Pendant',
-    price: 'On Request',
-    det: 'Sterling silver · Talisman',
-    desc: 'Hand-forged pendant inscribed with protective glyphs. Each piece charged under specific lunar phases. Includes authentication and ritual instructions.',
-    ai: 13
-  },
-  {
-    name: 'Sound Bowl Set',
-    price: 'On Request',
-    det: 'Bronze · Harmonic resonance',
-    desc: 'Three precision-tuned singing bowls creating perfect intervals. For sound meditation and energy work. Includes striker and cushion.',
-    ai: 9
-  },
-  {
-    name: 'Incense Collection',
-    price: 'On Request',
-    det: 'Wildcrafted · Seven scents',
-    desc: 'Hand-rolled incense set: Protection, Clarity, Dreams, Grounding, Vision, Transformation, Invocation. Traditional methods, natural resins.',
-    ai: 14
-  },
-  {
-    name: 'Wax Seal Kit',
-    price: 'On Request',
-    det: 'Bespoke design · Seven colors',
-    desc: 'Custom sigil design through consultation. Brass stamp, seven wax colors, melting spoon, and ceremonial instructions included.',
-    ai: 11
-  },
-  {
-    name: 'Tarot Cloth',
-    price: 'On Request',
-    det: 'Hand-dyed silk · Sacred geometry',
-    desc: 'Luxury 90x90cm silk cloth with hand-painted geometry patterns. Midnight blue or deep crimson. Consecrated before shipping.',
-    ai: 15
-  },
-  {
-    name: 'Crystal Grid Set',
-    price: 'On Request',
-    det: 'Quartz · Geometric arrangement',
-    desc: 'Seven crystal points arranged in sacred geometry pattern. Includes instruction manual for activation and intention setting.',
-    ai: 12
-  },
-  {
-    name: 'Ritual Blade',
-    price: 'On Request',
-    det: 'Forged steel · Ceremonial',
-    desc: 'Hand-forged athame for ritual work. Never sharpened, symbolic only. Includes wooden sheath and cleansing instructions.',
-    ai: 16
-  }
-];
+var PRODUCTS_FALLBACK = [
+  { name:'Obsidian Mirror',    price:'On Request', det:'Volcanic glass · Scrying tool',       desc:'Hand-polished obsidian mirror for contemplation and shadow work. Each piece unique, approx. 15 cm diameter, mounted on consecrated wood base.',   ai:10 },
+  { name:'Sigil Pendant',      price:'On Request', det:'Sterling silver · Talisman',          desc:'Hand-forged pendant inscribed with protective glyphs. Charged under specific lunar phases. Includes authentication and ritual instructions.',        ai:13 },
+  { name:'Sound Bowl Set',     price:'On Request', det:'Bronze · Harmonic resonance',         desc:'Three precision-tuned singing bowls creating perfect intervals. For sound meditation and energy work. Includes striker and cushion.',                ai:9  },
+  { name:'Incense Collection', price:'On Request', det:'Wildcrafted · Seven scents',          desc:'Hand-rolled incense set: Protection, Clarity, Dreams, Grounding, Vision, Transformation, Invocation. Traditional methods, natural resins.',          ai:14 },
+  { name:'Wax Seal Kit',       price:'On Request', det:'Bespoke design · Seven colors',       desc:'Custom sigil design through consultation. Brass stamp, seven wax colors, melting spoon, and ceremonial instructions included.',                      ai:11 },
+  { name:'Tarot Cloth',        price:'On Request', det:'Hand-dyed silk · Sacred geometry',   desc:'Luxury 90×90 cm silk cloth with hand-painted geometry patterns. Midnight blue or deep crimson. Consecrated before shipping.',                        ai:15 },
+  { name:'Crystal Grid Set',   price:'On Request', det:'Quartz · Geometric arrangement',     desc:'Seven crystal points arranged in sacred geometry pattern. Includes instruction manual for activation and intention setting.',                          ai:12 },
+  { name:'Ritual Blade',       price:'On Request', det:'Forged steel · Ceremonial',          desc:'Hand-forged athame for ritual work. Never sharpened, symbolic only. Includes wooden sheath and cleansing instructions.',                              ai:16 }
+]
 
-var currentProduct = null;
+var currentProduct  = null
+var ACTIVE_PRODUCTS = PRODUCTS_FALLBACK
 
 function buildShop() {
-  var grid = document.getElementById('sgrid');
-  if (!grid) return;
-  
-  for (var i = 0; i < PRODUCTS.length; i++) {
-    var p = PRODUCTS[i];
-    var prod = document.createElement('div');
-    prod.className = 'product';
-    prod.dataset.index = i;
-    prod.onclick = function() { openRequestModal(parseInt(this.dataset.index)); };
-    
+  var grid = document.getElementById('sgrid')
+  if (!grid) return
+  grid.innerHTML = ''
+
+  ACTIVE_PRODUCTS = (SANITY_CONTENT && SANITY_CONTENT.totems && SANITY_CONTENT.totems.length)
+    ? SANITY_CONTENT.totems.map(function (t) {
+        var materials = Array.isArray(t.materials) ? t.materials.join(' · ') : ''
+        return {
+          name:     t.title,
+          price:    t.pricing || 'On Request',
+          det:      materials || t.category || '',
+          desc:     t.fullDescription || t.shortDescription || '',
+          imageUrl: t.imageUrl || '',
+          imageAlt: t.imageAlt || t.title
+        }
+      })
+    : PRODUCTS_FALLBACK
+
+  ACTIVE_PRODUCTS.forEach(function (p, i) {
+    var prod = document.createElement('div')
+    prod.className = 'product'
+    prod.dataset.index = i
+
+    var visHtml = p.imageUrl
+      ? '<img src="' + p.imageUrl + '" alt="' + (p.imageAlt || p.name) + '" style="width:100%;height:220px;object-fit:cover;display:block;">'
+      : (typeof mkArt === 'function' ? mkArt(p.ai || 10, 300, 300) : '')
+
     prod.innerHTML =
-      '<div class="prod-vis">' + mkArt(p.ai, 300, 300) + '</div>' +
+      '<div class="prod-vis">' + visHtml + '</div>' +
       '<div class="prod-info">' +
         '<div class="prod-name">' + p.name + '</div>' +
-        '<div class="prod-det">' + p.det + '</div>' +
+        '<div class="prod-det">'  + p.det  + '</div>' +
         '<div class="prod-row">' +
           '<div class="prod-price">' + p.price + '</div>' +
-          '<button class="prod-add" onclick="event.stopPropagation(); openRequestModal(' + i + ')">Request</button>' +
+          '<button class="prod-add" onclick="event.stopPropagation();openRequestModal(' + i + ')">Make a Request</button>' +
         '</div>' +
-      '</div>';
-    
-    prod.addEventListener('mouseenter', function() { ch(true); });
-    prod.addEventListener('mouseleave', function() { ch(false); });
-    grid.appendChild(prod);
-  }
+      '</div>'
+
+    prod.addEventListener('click', function () { openRequestModal(parseInt(this.dataset.index)) })
+    prod.addEventListener('mouseenter', function () { if (typeof ch === 'function') ch(true)  })
+    prod.addEventListener('mouseleave', function () { if (typeof ch === 'function') ch(false) })
+    grid.appendChild(prod)
+  })
 }
 
-// REQUEST MODAL
+// ---- Request modal ----
+
 function openRequestModal(idx) {
-  currentProduct = PRODUCTS[idx];
-  
-  var modal = document.getElementById('request-modal');
-  if (!modal) {
-    createRequestModal();
-    modal = document.getElementById('request-modal');
+  currentProduct = ACTIVE_PRODUCTS[idx]
+
+  var modal = document.getElementById('request-modal')
+  if (!modal) { createRequestModal(); modal = document.getElementById('request-modal') }
+
+  var imgEl   = document.getElementById('req-img')
+  var titleEl = document.getElementById('req-title')
+  var descEl  = document.getElementById('req-desc')
+
+  if (currentProduct.imageUrl) {
+    imgEl.innerHTML = '<img src="' + currentProduct.imageUrl + '" alt="' + (currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;max-height:260px;object-fit:cover;display:block;">'
+  } else if (typeof mkArt === 'function') {
+    imgEl.innerHTML = mkArt(currentProduct.ai || 10, 400, 240)
+  } else {
+    imgEl.innerHTML = ''
   }
-  
-  document.getElementById('req-img').innerHTML = mkArt(currentProduct.ai, 400, 300);
-  document.getElementById('req-title').textContent = currentProduct.name;
-  document.getElementById('req-desc').textContent = currentProduct.desc;
-  
-  modal.classList.add('show');
-  document.getElementById('req-form').reset();
-  document.getElementById('req-success').style.display = 'none';
+
+  titleEl.textContent = currentProduct.name
+  descEl.textContent  = currentProduct.desc
+
+  document.getElementById('req-form').reset()
+  document.getElementById('req-success').style.display = 'none'
+  document.getElementById('req-error').style.display   = 'none'
+  modal.classList.add('show')
 }
 
 function closeRequestModal() {
-  document.getElementById('request-modal').classList.remove('show');
+  var modal = document.getElementById('request-modal')
+  if (modal) modal.classList.remove('show')
 }
 
 function createRequestModal() {
-  var modal = document.createElement('div');
-  modal.id = 'request-modal';
-  modal.className = 'request-modal';
+  var modal = document.createElement('div')
+  modal.id        = 'request-modal'
+  modal.className = 'request-modal'
   modal.innerHTML = `
     <div class="request-content">
       <div class="request-header">
-        <div style="flex:1;">
-          <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.2rem;color:var(--ink);margin:0;letter-spacing:.02em;">Request Details</h2>
-        </div>
-        <button class="request-close" onclick="closeRequestModal()">×</button>
+        <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--ink);margin:0;letter-spacing:.02em;">Make a Request</h2>
+        <button class="request-close" onclick="closeRequestModal()" aria-label="Close">×</button>
       </div>
       <div class="request-body">
         <div class="request-img" id="req-img"></div>
         <h3 class="request-title" id="req-title"></h3>
         <p class="request-subtitle" id="req-desc"></p>
-        
+
         <form class="request-form" id="req-form" onsubmit="submitRequest(event)">
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">First Name</label>
-              <input type="text" class="form-input" name="firstName" required>
+              <label class="form-label">First Name <span style="color:var(--accent)">*</span></label>
+              <input type="text" class="form-input" name="firstName" required placeholder="—">
             </div>
             <div class="form-group">
-              <label class="form-label">Last Name</label>
-              <input type="text" class="form-input" name="lastName" required>
+              <label class="form-label">Last Name <span style="color:var(--accent)">*</span></label>
+              <input type="text" class="form-input" name="lastName" required placeholder="—">
             </div>
           </div>
-          
+
           <div class="form-group">
-            <label class="form-label">Email Address</label>
-            <input type="email" class="form-input" name="email" required>
+            <label class="form-label">Email Address <span style="color:var(--accent)">*</span></label>
+            <input type="email" class="form-input" name="email" required placeholder="—">
           </div>
-          
+
           <div class="form-group">
-            <label class="form-label">Message (Optional)</label>
-            <textarea class="form-textarea" name="message" placeholder="Tell us more about your interest..."></textarea>
+            <label class="form-label">Your Message <span style="opacity:.5;font-weight:400;">(optional)</span></label>
+            <textarea class="form-textarea" name="message" placeholder="Tell me more about your interest, how you found this piece, or any questions you have…"></textarea>
           </div>
-          
+
           <button type="submit" class="form-submit">Submit Request</button>
-          
-          <div class="form-success" id="req-success">
-            <p><strong>Thank you!</strong> Your request has been received. We'll be in touch soon.</p>
+
+          <div class="form-success" id="req-success" style="display:none;">
+            <p><strong>Thank you.</strong> Your request has been received — I'll be in touch soon.</p>
+          </div>
+          <div class="form-error" id="req-error" style="display:none;">
+            <p>Something went wrong. Please try again or email directly.</p>
           </div>
         </form>
       </div>
-    </div>
-  `;
-  
-  // Close on outside click
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) closeRequestModal();
-  });
-  
-  document.body.appendChild(modal);
+    </div>`
+
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeRequestModal() })
+  document.body.appendChild(modal)
 }
 
 async function submitRequest(e) {
-  e.preventDefault();
-  var form = e.target;
-  
+  e.preventDefault()
+  var form = e.target
+  var btn  = form.querySelector('[type="submit"]')
+
   var data = {
-    item: currentProduct.name,
+    item:      currentProduct ? currentProduct.name : '',
     firstName: form.firstName.value,
-    lastName: form.lastName.value,
-    email: form.email.value,
-    message: form.message.value || '',
-    timestamp: new Date().toISOString()
-  };
-  
+    lastName:  form.lastName.value,
+    email:     form.email.value,
+    message:   form.message ? form.message.value : ''
+  }
+
+  btn.textContent = 'Sending…'
+  btn.disabled    = true
+
   try {
-    // Send to API endpoint
-    var response = await fetch('/api/submit-request', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
-    });
-    
-    if (response.ok) {
-      document.getElementById('req-success').style.display = 'block';
-      form.reset();
-      setTimeout(closeRequestModal, 3000);
+    var res = await fetch('/api/submit-request', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data)
+    })
+    if (res.ok) {
+      document.getElementById('req-success').style.display = 'block'
+      form.reset()
+      setTimeout(closeRequestModal, 3000)
     } else {
-      alert('Error submitting request. Please try again.');
+      throw new Error('Server error')
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    // Fallback: show success anyway for demo
-    document.getElementById('req-success').style.display = 'block';
-    form.reset();
-    setTimeout(closeRequestModal, 3000);
+  } catch (err) {
+    console.error('Request error:', err)
+    document.getElementById('req-error').style.display = 'block'
+    btn.textContent = 'Submit Request'
+    btn.disabled    = false
   }
 }
 
-// ==================== INITIALIZATION ====================
+// ==================== CONTACT FORM ====================
 
-// Add to existing DOMContentLoaded event
-(function() {
-  var originalInit = window.addEventListener;
-  document.addEventListener('DOMContentLoaded', function() {
-    buildPlay();
-    buildArticles();
-    buildShop();
-  });
-})();
+function initContactForm() {
+  var page = document.getElementById('pg-contact')
+  if (!page) return
+
+  var btn = page.querySelector('.ct-send')
+  if (!btn) return
+
+  btn.addEventListener('click', async function (e) {
+    e.preventDefault()
+
+    var nameInput    = page.querySelector('input[type="text"]')
+    var emailInput   = page.querySelector('input[type="email"]')
+    var subjectSel   = page.querySelector('select')
+    var messageArea  = page.querySelector('textarea')
+
+    var name    = nameInput   ? nameInput.value.trim()   : ''
+    var email   = emailInput  ? emailInput.value.trim()  : ''
+    var subject = subjectSel  ? subjectSel.value         : ''
+    var message = messageArea ? messageArea.value.trim() : ''
+
+    if (!name || !email || !message) {
+      btn.textContent = 'Fill in all fields ↑'
+      setTimeout(function () { btn.innerHTML = 'Send &rarr;' }, 2500)
+      return
+    }
+
+    var origText = btn.innerHTML
+    btn.textContent = 'Sending…'
+    btn.disabled    = true
+
+    try {
+      var res = await fetch('/api/contact', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, email, subject, message })
+      })
+      if (!res.ok) throw new Error('Server error')
+      btn.textContent = 'Sent ✓'
+      if (nameInput)   nameInput.value   = ''
+      if (emailInput)  emailInput.value  = ''
+      if (subjectSel)  subjectSel.value  = ''
+      if (messageArea) messageArea.value = ''
+      setTimeout(function () { btn.innerHTML = origText; btn.disabled = false }, 4000)
+    } catch (err) {
+      console.error('Contact error:', err)
+      btn.textContent = 'Error — try again'
+      btn.disabled    = false
+      setTimeout(function () { btn.innerHTML = origText }, 3000)
+    }
+  })
+}
+
+// ==================== MODAL STYLES (injected once) ====================
+
+function injectModalStyles() {
+  if (document.getElementById('req-modal-styles')) return
+  var style = document.createElement('style')
+  style.id = 'req-modal-styles'
+  style.textContent = `
+    .request-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+    .request-modal.show{opacity:1;pointer-events:all;}
+    .request-content{background:var(--bg);width:min(560px,92vw);max-height:90vh;overflow-y:auto;padding:0;}
+    .request-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--rule-s);}
+    .request-close{background:none;border:none;font-size:22px;color:var(--mid);cursor:pointer;padding:0;line-height:1;}
+    .request-close:hover{color:var(--ink);}
+    .request-body{padding:24px;}
+    .request-img{margin-bottom:16px;overflow:hidden;}
+    .request-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);margin:0 0 8px;}
+    .request-subtitle{font-family:'Syne',sans-serif;font-size:.78rem;line-height:1.65;color:var(--mid);margin:0 0 24px;}
+    .request-form{display:flex;flex-direction:column;gap:14px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:480px){.form-row{grid-template-columns:1fr;}}
+    .form-group{display:flex;flex-direction:column;gap:6px;}
+    .form-label{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);}
+    .form-input,.form-textarea{background:var(--bg2);border:1px solid var(--rule-s);color:var(--ink);font-family:'Syne',sans-serif;font-size:.82rem;padding:10px 12px;outline:none;transition:border-color .2s;}
+    .form-input:focus,.form-textarea:focus{border-color:var(--ink);}
+    .form-textarea{resize:vertical;min-height:90px;}
+    .form-submit{font-family:'Syne',sans-serif;font-weight:700;font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--bg);background:var(--ink);border:none;cursor:pointer;padding:14px 28px;transition:opacity .2s;}
+    .form-submit:hover{opacity:.75;}
+    .form-submit:disabled{opacity:.5;cursor:not-allowed;}
+    .form-success,.form-error{padding:12px 16px;font-family:'Syne',sans-serif;font-size:.82rem;line-height:1.5;}
+    .form-success{background:rgba(100,180,100,.12);color:var(--ink);}
+    .form-error{background:rgba(200,60,60,.12);color:var(--ink);}
+  `
+  document.head.appendChild(style)
+}
+
+// ==================== INIT ====================
+
+;(function () {
+  injectModalStyles()
+
+  document.addEventListener('DOMContentLoaded', async function () {
+    // Load Sanity content — falls back gracefully if unconfigured
+    await loadSanityContent()
+
+    // Rebuild sections with Sanity data (build functions clear their containers first)
+    buildPlay()
+    buildArticles()
+    buildShop()
+
+    // Apply Sanity overrides for images and settings
+    if (SANITY_CONTENT) {
+      if (SANITY_CONTENT.siteSettings)
+        applySiteSettings(SANITY_CONTENT.siteSettings)
+      if (SANITY_CONTENT.homepageImages && SANITY_CONTENT.homepageImages.length)
+        applyHomepageImages(SANITY_CONTENT.homepageImages)
+      if (SANITY_CONTENT.universeImages && SANITY_CONTENT.universeImages.length)
+        applyUniverseImages(SANITY_CONTENT.universeImages)
+    }
+
+    initContactForm()
+  })
+})()
