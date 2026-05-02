@@ -1,24 +1,21 @@
 {
-  "version": 2,
-  "name": "sylhera",
-  "builds": [
-    { "src": "index.html",              "use": "@vercel/static" },
-    { "src": "sylhera-enhancements.js", "use": "@vercel/static" },
-    { "src": "sylhera-enhancements.css","use": "@vercel/static" },
-    { "src": "studio-build/**",         "use": "@vercel/static" },
-    { "src": "api/**/*.js",             "use": "@vercel/node"   }
-  ],
-  "routes": [
-    { "src": "/api/(.*)",        "dest": "/api/$1" },
-    { "src": "/static/(.*)",     "dest": "/studio-build/static/$1" },
-    { "src": "/studio(/.*)?",    "dest": "/studio-build/index.html" },
-    { "src": "/(.*)",            "dest": "/$1" }
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/static/(.*)", "destination": "/studio-build/static/$1" },
+    { "source": "/studio",      "destination": "/studio-build/index.html" },
+    { "source": "/studio/(.*)", "destination": "/studio-build/index.html" }
   ],
   "headers": [
     {
       "source": "/studio(.*)",
       "headers": [
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
       ]
     },
     {
