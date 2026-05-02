@@ -5,6 +5,12 @@
 // Falls back to hardcoded data when Sanity is not configured.
 // ====================================================================
 
+// ==================== HELPERS ====================
+
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 // ==================== SANITY CONTENT LOADER ====================
 
 var SANITY_CONTENT = null
@@ -91,7 +97,7 @@ function applyHomepageImages(images) {
     var artEl = cells[idx].querySelector('.ab-art-img, .ab-art')
     if (artEl) {
       artEl.className = 'ab-art-img'
-      artEl.innerHTML = '<img src="' + img.imageUrl + '" alt="' + (img.title || '') + '" style="width:100%;height:100%;object-fit:cover;display:block;">'
+      artEl.innerHTML = '<img src="' + esc(img.imageUrl) + '" alt="' + esc(img.title || '') + '" style="width:100%;height:100%;object-fit:cover;display:block;">'
     }
     var tagEl   = cells[idx].querySelector('.ab-tag')
     var titleEl = cells[idx].querySelector('.ab-title')
@@ -112,8 +118,8 @@ function applyUniverseImages(images) {
     item.className = 'univ-item univ-item-img'
     item.style.position = 'relative'
     item.innerHTML =
-      '<img src="' + img.imageUrl + '" alt="' + (img.title || '') + '" style="width:100%;display:block;">' +
-      '<div class="univ-cap">' + (img.caption || img.title || '') + '</div>'
+      '<img src="' + esc(img.imageUrl) + '" alt="' + esc(img.title || '') + '" style="width:100%;display:block;">' +
+      '<div class="univ-cap">' + esc(img.caption || img.title || '') + '</div>'
     item.addEventListener('mouseenter', function () { if (typeof ch === 'function') ch(true)  })
     item.addEventListener('mouseleave', function () { if (typeof ch === 'function') ch(false) })
     masonry.appendChild(item)
@@ -468,16 +474,16 @@ function buildShop() {
     prod.dataset.index = i
 
     var visHtml = p.imageUrl
-      ? '<img src="' + p.imageUrl + '" alt="' + (p.imageAlt || p.name) + '" style="width:100%;height:220px;object-fit:cover;display:block;">'
+      ? '<img src="' + esc(p.imageUrl) + '" alt="' + esc(p.imageAlt || p.name) + '" style="width:100%;height:220px;object-fit:cover;display:block;">'
       : (typeof mkArt === 'function' ? mkArt(p.ai || 10, 300, 300) : '')
 
     prod.innerHTML =
       '<div class="prod-vis">' + visHtml + '</div>' +
       '<div class="prod-info">' +
-        '<div class="prod-name">' + p.name + '</div>' +
-        '<div class="prod-det">'  + p.det  + '</div>' +
+        '<div class="prod-name">' + esc(p.name) + '</div>' +
+        '<div class="prod-det">'  + esc(p.det)  + '</div>' +
         '<div class="prod-row">' +
-          '<div class="prod-price">' + p.price + '</div>' +
+          '<div class="prod-price">' + esc(p.price) + '</div>' +
           '<button class="prod-add" onclick="event.stopPropagation();openRequestModal(' + i + ')">Make a Request</button>' +
         '</div>' +
       '</div>'
@@ -502,7 +508,7 @@ function openRequestModal(idx) {
   var descEl  = document.getElementById('req-desc')
 
   if (currentProduct.imageUrl) {
-    imgEl.innerHTML = '<img src="' + currentProduct.imageUrl + '" alt="' + (currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;max-height:260px;object-fit:cover;display:block;">'
+    imgEl.innerHTML = '<img src="' + esc(currentProduct.imageUrl) + '" alt="' + esc(currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;max-height:260px;object-fit:cover;display:block;">'
   } else if (typeof mkArt === 'function') {
     imgEl.innerHTML = mkArt(currentProduct.ai || 10, 400, 240)
   } else {
@@ -513,6 +519,7 @@ function openRequestModal(idx) {
   descEl.textContent  = currentProduct.desc
 
   document.getElementById('req-form').reset()
+  document.getElementById('req-t').value = Date.now()
   document.getElementById('req-success').style.display = 'none'
   document.getElementById('req-error').style.display   = 'none'
   modal.classList.add('show')
@@ -539,6 +546,8 @@ function createRequestModal() {
         <p class="request-subtitle" id="req-desc"></p>
 
         <form class="request-form" id="req-form" onsubmit="submitRequest(event)">
+          <input type="text" name="website" style="display:none;position:absolute;left:-9999px;" tabindex="-1" autocomplete="off">
+          <input type="hidden" name="_t" id="req-t">
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">First Name <span style="color:var(--accent)">*</span></label>
@@ -586,7 +595,9 @@ async function submitRequest(e) {
     firstName: form.firstName.value,
     lastName:  form.lastName.value,
     email:     form.email.value,
-    message:   form.message ? form.message.value : ''
+    message:   form.message ? form.message.value : '',
+    website:   form.website ? form.website.value : '',
+    _t:        form._t ? form._t.value : ''
   }
 
   btn.textContent = 'Sending…'
@@ -622,6 +633,8 @@ function initContactForm() {
   var btn = page.querySelector('.ct-send')
   if (!btn) return
 
+  var _contactT = Date.now()
+
   btn.addEventListener('click', async function (e) {
     e.preventDefault()
 
@@ -649,7 +662,7 @@ function initContactForm() {
       var res = await fetch('/api/contact', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, email, subject, message })
+        body:    JSON.stringify({ name, email, subject, message, website: '', _t: _contactT })
       })
       if (!res.ok) throw new Error('Server error')
       btn.textContent = 'Sent ✓'

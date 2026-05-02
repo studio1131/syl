@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "SYLHERA - Artist, composer and creative director portfolio website",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'Build complete'",
@@ -11,30 +12,21 @@
     "studio:deploy": "sanity deploy"
   },
   "dependencies": {
-    "@sanity/client": "^6.10.0",
+    "@sanity/client": "^6.22.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "@vercel/node": "^3.0.12",
     "styled-components": "^6.4.1"
   },
   "devDependencies": {
-    "@sanity/vision": "^3.22.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "sanity": "^3.22.0"
+    "@sanity/vision": "^5.23.0",
+    "react": "^19.2.2",
+    "react-dom": "^19.2.2",
+    "sanity": "^5.23.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/sylhera"
-  },
-  "keywords": [
-    "art",
-    "music",
-    "portfolio",
-    "artist",
-    "composer"
-  ],
   "author": "SYLHERA",
   "license": "MIT"
 }

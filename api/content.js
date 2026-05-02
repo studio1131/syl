@@ -5,8 +5,7 @@ const PROJECT_ID = process.env.SANITY_PROJECT_ID
 const DATASET   = process.env.SANITY_DATASET || 'production'
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+  res.setHeader('Cache-Control', 'no-store')
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -23,7 +22,7 @@ export default async function handler(req, res) {
     projectId: PROJECT_ID,
     dataset: DATASET,
     apiVersion: '2024-01-01',
-    useCdn: true
+    useCdn: false
   })
 
   try {
