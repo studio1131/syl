@@ -25,7 +25,7 @@
     "sanity": "^5.23.0"
   },
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "author": "SYLHERA",
   "license": "MIT"
