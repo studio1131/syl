@@ -218,6 +218,8 @@ function getAudioObj(idx) {
       var d = document.getElementById('duration-' + idx)
       if (p) p.style.width = pct + '%'
       if (d) d.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(dur)
+      setMiniPlayerFill(pct)
+      setMiniPlayerTime(audio.currentTime, dur)
     })
     audio.addEventListener('ended', function () {
       var trackEls = document.querySelectorAll('.track')
@@ -226,6 +228,7 @@ function getAudioObj(idx) {
       var p = document.getElementById('prog-' + idx)
       if (p) p.style.width = '0%'
       currentlyPlaying = -1
+      hideMiniPlayer()
     })
     audioObjects[idx] = audio
   }
@@ -256,6 +259,7 @@ function togglePlay(idx) {
   trackEls[idx].classList.add('playing')
   currentlyPlaying = idx
   updatePlayButton(idx, true)
+  showMiniPlayer(idx)
 
   var audio = getAudioObj(idx)
   if (audio) {
@@ -273,6 +277,7 @@ function updatePlayButton(idx, playing) {
   icon.innerHTML = playing
     ? '<rect x="3" y="2" width="2" height="8"/><rect x="7" y="2" width="2" height="8"/>'
     : '<path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/>'
+  setMiniPlayerIcon(playing)
 }
 
 function simulateAudioPlayback(idx) {
@@ -286,8 +291,11 @@ function simulateAudioPlayback(idx) {
     elapsed++
     var p = document.getElementById('prog-' + idx)
     var d = document.getElementById('duration-' + idx)
-    if (p) p.style.width = ((elapsed / duration) * 100) + '%'
+    var pct = (elapsed / duration) * 100
+    if (p) p.style.width = pct + '%'
     if (d) d.textContent = formatTime(elapsed) + ' / ' + formatTime(duration)
+    setMiniPlayerFill(pct)
+    setMiniPlayerTime(elapsed, duration)
     if (elapsed >= duration) {
       clearInterval(progressInterval)
       var trackEls = document.querySelectorAll('.track')
@@ -295,6 +303,7 @@ function simulateAudioPlayback(idx) {
       updatePlayButton(idx, false)
       if (p) p.style.width = '0%'
       currentlyPlaying = -1
+      hideMiniPlayer()
     }
   }, 1000)
 }
@@ -711,8 +720,123 @@ function injectModalStyles() {
     .form-success,.form-error{padding:12px 16px;font-family:'Syne',sans-serif;font-size:.82rem;line-height:1.5;}
     .form-success{background:rgba(100,180,100,.12);color:var(--ink);}
     .form-error{background:rgba(200,60,60,.12);color:var(--ink);}
+    #mini-player{position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--ink);color:var(--bg);display:flex;align-items:center;gap:16px;padding:0 20px;z-index:700;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);}
+    body.night #mini-player{background:#f5f3ee;color:#0c0b09;}
+    #mini-player.mp-visible{transform:translateY(0);}
+    .mp-info{display:flex;align-items:baseline;gap:10px;min-width:0;flex:0 0 auto;max-width:220px;}
+    .mp-num{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.14em;opacity:.5;flex-shrink:0;}
+    .mp-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .mp-genre{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;opacity:.4;flex-shrink:0;display:none;}
+    @media(min-width:600px){.mp-genre{display:block;}}
+    .mp-prog-wrap{flex:1;height:1px;background:rgba(255,255,255,.18);position:relative;cursor:pointer;}
+    body.night .mp-prog-wrap{background:rgba(0,0,0,.15);}
+    .mp-prog-fill{position:absolute;left:0;top:0;height:100%;background:rgba(255,255,255,.7);width:0%;transition:width .8s linear;}
+    body.night .mp-prog-fill{background:rgba(12,11,9,.6);}
+    .mp-time{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.06em;opacity:.5;flex-shrink:0;min-width:72px;text-align:right;}
+    .mp-btn{background:none;border:1px solid rgba(255,255,255,.25);color:var(--bg);width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .2s;padding:0;}
+    body.night .mp-btn{border-color:rgba(12,11,9,.2);color:#0c0b09;}
+    .mp-btn:hover{opacity:.65;}
+    .mp-btn svg{pointer-events:none;}
+    .mp-go{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.12em;text-transform:uppercase;opacity:.35;cursor:pointer;background:none;border:none;color:var(--bg);padding:0;flex-shrink:0;transition:opacity .2s;}
+    body.night .mp-go{color:#0c0b09;}
+    .mp-go:hover{opacity:.7;}
   `
   document.head.appendChild(style)
+}
+
+// ==================== PERSISTENT MINI PLAYER ====================
+
+function injectMiniPlayer() {
+  if (document.getElementById('mini-player')) return
+  var bar = document.createElement('div')
+  bar.id = 'mini-player'
+  bar.innerHTML =
+    '<div class="mp-info">' +
+      '<span class="mp-num" id="mp-num">01</span>' +
+      '<span class="mp-title" id="mp-title"></span>' +
+      '<span class="mp-genre" id="mp-genre"></span>' +
+    '</div>' +
+    '<div class="mp-prog-wrap" id="mp-prog-wrap">' +
+      '<div class="mp-prog-fill" id="mp-prog-fill"></div>' +
+    '</div>' +
+    '<span class="mp-time" id="mp-time">0:00 / --:--</span>' +
+    '<button class="mp-btn" id="mp-play-btn" onclick="mpToggle()" title="Play / Pause">' +
+      '<svg id="mp-icon" width="12" height="12" viewBox="0 0 12 12">' +
+        '<rect x="3" y="2" width="2" height="8" fill="currentColor"/>' +
+        '<rect x="7" y="2" width="2" height="8" fill="currentColor"/>' +
+      '</svg>' +
+    '</button>' +
+    '<button class="mp-btn" onclick="mpStop()" title="Stop">&#x2715;</button>' +
+    '<button class="mp-go" onclick="go(\'play\')" title="Go to Playground">Playground &rarr;</button>'
+  document.body.appendChild(bar)
+
+  document.getElementById('mp-prog-wrap').addEventListener('click', function (e) {
+    if (currentlyPlaying < 0) return
+    var rect = this.getBoundingClientRect()
+    var pct  = (e.clientX - rect.left) / rect.width
+    var audio = audioObjects[currentlyPlaying]
+    if (audio && audio.duration) {
+      audio.currentTime = pct * audio.duration
+    }
+  })
+}
+
+function showMiniPlayer(idx) {
+  var t = ACTIVE_TRACKS[idx]
+  if (!t) return
+  var el = document.getElementById('mini-player')
+  if (!el) return
+  var numEl   = document.getElementById('mp-num')
+  var titleEl = document.getElementById('mp-title')
+  var genreEl = document.getElementById('mp-genre')
+  if (numEl)   numEl.textContent   = t.n  || ''
+  if (titleEl) titleEl.textContent = t.ti || ''
+  if (genreEl) genreEl.textContent = t.ge || ''
+  setMiniPlayerFill(0)
+  el.classList.add('mp-visible')
+  setMiniPlayerIcon(true)
+}
+
+function hideMiniPlayer() {
+  var el = document.getElementById('mini-player')
+  if (el) el.classList.remove('mp-visible')
+}
+
+function setMiniPlayerIcon(playing) {
+  var icon = document.getElementById('mp-icon')
+  if (!icon) return
+  icon.innerHTML = playing
+    ? '<rect x="3" y="2" width="2" height="8" fill="currentColor"/><rect x="7" y="2" width="2" height="8" fill="currentColor"/>'
+    : '<path d="M3 2 L3 10 L9 6 Z" fill="currentColor"/>'
+}
+
+function setMiniPlayerFill(pct) {
+  var fill = document.getElementById('mp-prog-fill')
+  if (fill) fill.style.width = pct + '%'
+}
+
+function setMiniPlayerTime(current, duration) {
+  var el = document.getElementById('mp-time')
+  if (el) el.textContent = formatTime(current) + ' / ' + formatTime(duration)
+}
+
+function mpToggle() {
+  if (currentlyPlaying >= 0) togglePlay(currentlyPlaying)
+}
+
+function mpStop() {
+  if (currentlyPlaying >= 0) {
+    var audio = audioObjects[currentlyPlaying]
+    if (audio) { audio.pause(); audio.currentTime = 0 }
+    else clearInterval(progressInterval)
+    var trackEls = document.querySelectorAll('.track')
+    if (trackEls[currentlyPlaying]) trackEls[currentlyPlaying].classList.remove('playing')
+    updatePlayButton(currentlyPlaying, false)
+    var p = document.getElementById('prog-' + currentlyPlaying)
+    if (p) p.style.width = '0%'
+    currentlyPlaying = -1
+  }
+  hideMiniPlayer()
 }
 
 // ==================== LEGAL PAGES ====================
@@ -971,6 +1095,7 @@ function showLegal(key) {
 
 ;(function () {
   injectModalStyles()
+  injectMiniPlayer()
 
   document.addEventListener('DOMContentLoaded', async function () {
     // Load Sanity content — falls back gracefully if unconfigured
