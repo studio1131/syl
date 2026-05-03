@@ -1,8 +1,19 @@
 // api/content.js — serves all CMS content to the frontend
 import { createClient } from '@sanity/client'
+import { createHmac } from 'crypto'
 
-const PROJECT_ID = process.env.SANITY_PROJECT_ID
-const DATASET   = process.env.SANITY_DATASET || 'production'
+const PROJECT_ID  = process.env.SANITY_PROJECT_ID
+const DATASET     = process.env.SANITY_DATASET || 'production'
+const SIGNING_KEY = process.env.AUDIO_SIGNING_SECRET || ''
+
+// Generate a signed token valid for 30 minutes for a given track ID
+function signAudioToken(id) {
+  const expiry  = Math.floor(Date.now() / 1000) + 1800
+  const payload = `${id}:${expiry}`
+  if (!SIGNING_KEY) return null  // dev mode — no token needed
+  const sig = createHmac('sha256', SIGNING_KEY).update(payload).digest('base64url')
+  return Buffer.from(payload).toString('base64url') + '.' + sig
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
@@ -39,6 +50,7 @@ export default async function handler(req, res) {
         body
       }`),
 
+      // audioUrl intentionally omitted — served only through /api/audio proxy
       client.fetch(`*[_type == "track"] | order(order asc) {
         _id, title, trackNumber, genre, duration, dark
       }`),
@@ -61,7 +73,18 @@ export default async function handler(req, res) {
       }`)
     ])
 
-    return res.status(200).json({ totems, posts, tracks, homepageImages, universeImages, siteSettings })
+    // Attach signed, expiring audio tokens to each track.
+    // The actual CDN URL is never included — only /api/audio?id=...&t=... is used.
+    const tracksWithTokens = tracks.map(t => ({
+      ...t,
+      token: signAudioToken(t._id)
+    }))
+
+    return res.status(200).json({
+      totems, posts,
+      tracks: tracksWithTokens,
+      homepageImages, universeImages, siteSettings
+    })
   } catch (error) {
     console.error('Content fetch error:', error)
     return res.status(500).json({ error: 'Failed to fetch content' })

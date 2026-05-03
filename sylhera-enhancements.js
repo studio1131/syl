@@ -165,7 +165,7 @@ function buildPlay() {
           ge:       t.genre || '',
           dk:       !!t.dark,
           duration: t.duration || 0,
-          url:      t._id ? '/api/audio?id=' + encodeURIComponent(t._id) : ''
+          url:      t._id ? '/api/audio?id=' + encodeURIComponent(t._id) + (t.token ? '&t=' + encodeURIComponent(t.token) : '') : ''
         }
       })
     : TRACKS_FALLBACK
@@ -1096,6 +1096,18 @@ function showLegal(key) {
 ;(function () {
   injectModalStyles()
   injectMiniPlayer()
+
+  // Disable right-click on audio player areas to remove "Save audio as" option
+  document.addEventListener('contextmenu', function (e) {
+    var el = e.target
+    while (el) {
+      if (el.id === 'pg-play' || el.id === 'mini-player' || el.id === 'mgrid') {
+        e.preventDefault()
+        return
+      }
+      el = el.parentElement
+    }
+  })
 
   document.addEventListener('DOMContentLoaded', async function () {
     // Load Sanity content — falls back gracefully if unconfigured
