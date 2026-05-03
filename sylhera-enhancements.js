@@ -715,6 +715,258 @@ function injectModalStyles() {
   document.head.appendChild(style)
 }
 
+// ==================== LEGAL PAGES ====================
+
+var LEGAL_PAGES = {
+
+  terms: {
+    title: 'Terms & Conditions',
+    content: `
+      <h1 class="legal-h1">Terms &amp; Conditions</h1>
+      <p class="legal-sub">Last updated — May 2026</p>
+
+      <div class="legal-section">
+        <h3>01 — General</h3>
+        <p>These Terms and Conditions govern your use of the SYLHERA website and any purchase, commission, or service agreement made through it. By accessing or using this site, you accept these terms in full. If you disagree with any part, please do not use this site.</p>
+        <p>SYLHERA reserves the right to modify these terms at any time. Changes take effect immediately upon publication. Continued use of the site constitutes acceptance of the revised terms.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>02 — Limited Editions &amp; Totems</h3>
+        <p>All objects sold through this site are <strong>limited-edition, handcrafted pieces</strong>. Each piece is unique or produced in a strictly limited run. Photographs are representative but minor variations in material, patina, and dimension are inherent to the handmade process and are not considered defects.</p>
+        <p>Availability is indicated at the time of listing. SYLHERA reserves the right to withdraw any item from sale at any time prior to order confirmation.</p>
+        <p>Pricing is listed in Euros (€) and is exclusive of applicable customs duties or import taxes, which remain the sole responsibility of the buyer.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>03 — Orders &amp; Payment</h3>
+        <p>All orders are processed individually. Upon submitting a request, you will receive a confirmation and invoice by email within 48 hours. Your order is only confirmed once payment has been received in full.</p>
+        <p>Payment is accepted by bank transfer or agreed secure method communicated at time of invoice. SYLHERA does not store payment information.</p>
+        <p>For high-value or bespoke pieces, a <strong>50% deposit</strong> may be required before work begins, with the balance due prior to shipping.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>04 — Shipping &amp; Delivery</h3>
+        <p>Objects are shipped from Paris, France. Delivery timelines vary by destination and are provided at the time of order confirmation. All pieces are carefully packaged and shipped with tracking and insurance.</p>
+        <p>SYLHERA is not responsible for delays caused by customs clearance, carrier issues, or circumstances beyond our control. Risk of loss passes to the buyer upon handover to the carrier.</p>
+        <p>International buyers are responsible for all applicable import duties, taxes, and customs fees levied by their country of import.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>05 — Final Sale Policy</h3>
+        <p><strong>All sales are final.</strong> Due to the limited, handcrafted, and often one-of-a-kind nature of the pieces, returns and exchanges are not accepted. Please review all information carefully before submitting a request.</p>
+        <p>In the event of damage during transit, the buyer must document and report the damage within 48 hours of receipt, with photographs, so that an insurance claim can be initiated.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>06 — Commissions &amp; Creative Services</h3>
+        <p>Custom commissions (music composition, creative direction, writing, bespoke objects) are subject to a separate written agreement established on a per-project basis. All terms including scope, timeline, deliverables, and fees will be confirmed in writing before work begins.</p>
+        <p>SYLHERA retains full intellectual property rights over all created work unless explicitly transferred in writing as part of the agreement. A usage licence may be granted in lieu of full transfer.</p>
+        <p>Deposits paid on commissions are non-refundable once creative work has commenced.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>07 — Intellectual Property</h3>
+        <p>All content on this site — including but not limited to music, sound recordings, visual works, objects, texts, photographs, and graphic elements — is the exclusive intellectual property of SYLHERA and is protected under applicable French and international copyright law.</p>
+        <p>No content may be reproduced, distributed, adapted, or used commercially without prior written authorisation. Personal, non-commercial use with proper attribution is permitted.</p>
+        <p>Purchasing a physical object does not transfer any intellectual property rights in the associated work, design, or identity.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>08 — Privacy</h3>
+        <p>Personal data collected through this site (name, email, message content) is used solely for the purpose of responding to your enquiry or processing your order. It is never sold or shared with third parties for commercial purposes.</p>
+        <p>You have the right to access, correct, or request deletion of your personal data at any time by writing to the contact address provided on this site.</p>
+        <p>For full details, refer to our <strong>Legal Notice</strong>.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>09 — Governing Law</h3>
+        <p>These terms are governed by French law. Any dispute arising from the use of this site or from a purchase agreement shall be subject to the exclusive jurisdiction of the competent courts of Paris, France, unless mandatory consumer protection laws in your country provide otherwise.</p>
+      </div>
+    `
+  },
+
+  legal: {
+    title: 'Legal Notice',
+    content: `
+      <h1 class="legal-h1">Legal Notice</h1>
+      <p class="legal-sub">Mentions légales — conformément à la loi française</p>
+
+      <div class="legal-section">
+        <h3>01 — Website Publisher</h3>
+        <p>This website is published by <strong>SYLHERA</strong>, an independent creative practice operating under French law, based in Paris, France.</p>
+        <p>For any enquiry: <a href="mailto:contact@sylhera.com" style="color:var(--ink);text-decoration:underline;">contact@sylhera.com</a></p>
+        <p><em>In accordance with French Law n°2004-575 of 21 June 2004 (Loi pour la Confiance dans l'Économie Numérique), the full identity of the publisher is available upon written request.</em></p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>02 — Hosting</h3>
+        <p>This site is hosted by <strong>Vercel Inc.</strong>, 340 Pine Street, Suite 701, San Francisco, CA 94104, United States. <a href="https://vercel.com" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">vercel.com</a></p>
+        <p>Content management is handled via <strong>Sanity.io</strong>, Sanity AS, Stortingsgata 8, 0161 Oslo, Norway. <a href="https://sanity.io" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">sanity.io</a></p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>03 — Intellectual Property</h3>
+        <p>All elements of this site — including the name SYLHERA, all visual works, musical compositions, sound recordings, objects, texts, illustrations, and the overall structure and design of the site — are protected by copyright and are the exclusive property of their author.</p>
+        <p>Any reproduction, representation, adaptation, or distribution, in full or in part, by any means whatsoever, without prior written authorisation, is strictly prohibited and constitutes an infringement under Articles L.335-2 et seq. of the French Intellectual Property Code.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>04 — Personal Data &amp; GDPR</h3>
+        <p>SYLHERA collects personal data (name, email address, message content) solely through the contact and request forms on this site. This data is processed for the purpose of responding to enquiries and managing orders, on the legal basis of legitimate interest and/or pre-contractual relations.</p>
+        <p>Data is retained only for as long as necessary to fulfil the purpose for which it was collected. It is never sold, rented, or shared with third parties for commercial or marketing purposes.</p>
+        <p>In accordance with Regulation (EU) 2016/679 (GDPR) and French Law n°78-17 of 6 January 1978 (Loi Informatique et Libertés), you have the right to:</p>
+        <p><strong>Access</strong> — obtain a copy of the personal data held about you.<br>
+        <strong>Rectification</strong> — correct inaccurate or incomplete data.<br>
+        <strong>Erasure</strong> — request deletion of your data ("right to be forgotten").<br>
+        <strong>Portability</strong> — receive your data in a structured, machine-readable format.<br>
+        <strong>Objection</strong> — object to the processing of your data at any time.</p>
+        <p>To exercise these rights, write to: <a href="mailto:contact@sylhera.com" style="color:var(--ink);text-decoration:underline;">contact@sylhera.com</a></p>
+        <p>If you believe your rights have not been respected, you may lodge a complaint with the <strong>CNIL</strong> (Commission Nationale de l'Informatique et des Libertés): <a href="https://www.cnil.fr" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">cnil.fr</a></p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>05 — Cookies</h3>
+        <p>This site does not use advertising or tracking cookies. Technical cookies strictly necessary for the operation of the site (session management, security) may be used without prior consent in accordance with CNIL guidelines.</p>
+        <p>No personal browsing data is transmitted to third parties for advertising purposes. Analytics, if any, are anonymised and non-intrusive.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>06 — Limitation of Liability</h3>
+        <p>SYLHERA makes every effort to ensure the accuracy and currency of information published on this site but cannot guarantee it is complete or error-free. The site is provided "as is" and SYLHERA accepts no liability for any direct or indirect damages arising from its use.</p>
+        <p>SYLHERA is not responsible for the content of third-party sites linked from this site. External links are provided for informational purposes only.</p>
+      </div>
+
+      <div class="legal-divider"></div>
+
+      <div class="legal-section">
+        <h3>07 — Applicable Law</h3>
+        <p>This legal notice is governed by French law. Any dispute arising from the interpretation or execution of these notices shall be subject to the exclusive jurisdiction of the competent courts of Paris, France.</p>
+      </div>
+    `
+  },
+
+  cookies: {
+    title: 'Cookies',
+    content: `
+      <h1 class="legal-h1">Cookie Policy</h1>
+      <p class="legal-sub">Last updated — May 2026</p>
+      <div class="legal-section">
+        <h3>What are cookies?</h3>
+        <p>Cookies are small text files stored on your device when you visit a website. They allow the site to remember your preferences and improve your experience.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Cookies we use</h3>
+        <p><strong>Strictly necessary:</strong> These ensure the site functions correctly (security, session integrity). They cannot be disabled and do not require your consent.</p>
+        <p><strong>No advertising or tracking cookies</strong> are placed by this site. We do not share browsing data with advertising networks or data brokers.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Your choices</h3>
+        <p>You can configure your browser to block or delete cookies at any time. Note that blocking strictly necessary cookies may affect site functionality. Refer to your browser's help documentation for instructions.</p>
+        <p>For more information on your rights regarding cookies in France, consult the <strong>CNIL</strong>: <a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">cnil.fr</a></p>
+      </div>
+    `
+  },
+
+  shipping: {
+    title: 'Shipping',
+    content: `
+      <h1 class="legal-h1">Shipping</h1>
+      <p class="legal-sub">Worldwide — from Paris, France</p>
+      <div class="legal-section">
+        <h3>Processing</h3>
+        <p>Each object is prepared and packaged individually. Processing time is <strong>3–7 business days</strong> from order confirmation, or as stated in the specific listing. For bespoke pieces, production timelines are communicated separately.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Carriers &amp; Tracking</h3>
+        <p>Shipments are sent via insured and tracked carriers (Colissimo International, DHL Express, or equivalent). A tracking number is provided by email upon dispatch.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Customs &amp; Import Duties</h3>
+        <p>International orders may be subject to customs clearance procedures and import duties levied by the destination country. These charges are the sole responsibility of the buyer and are not included in the purchase price or shipping fee.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Damaged in Transit</h3>
+        <p>If your order arrives damaged, please photograph the packaging and the piece immediately and contact us within <strong>48 hours</strong> of receipt. All shipments are insured; we will initiate a claim on your behalf.</p>
+      </div>
+    `
+  },
+
+  returns: {
+    title: 'Returns',
+    content: `
+      <h1 class="legal-h1">Returns Policy</h1>
+      <p class="legal-sub">All sales are final</p>
+      <div class="legal-section">
+        <h3>Final Sale</h3>
+        <p>Due to the <strong>limited-edition, handcrafted, and one-of-a-kind nature</strong> of all pieces offered through this site, all sales are final. Returns, exchanges, and refunds are not accepted unless the piece arrives materially damaged or is demonstrably not as described.</p>
+        <p>Please read all descriptions carefully and reach out before purchasing if you have any questions about a piece.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Exception: Transit Damage</h3>
+        <p>If a piece is damaged during shipping, document the damage with photographs within <strong>48 hours of receipt</strong> and contact us immediately. We will assess the situation and, where the insurance claim is approved, arrange a replacement or credit at our discretion.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>Commissions</h3>
+        <p>Custom commissions are non-refundable once creative work has commenced. In the event of cancellation by the client after work has begun, the deposit is retained to cover work already completed.</p>
+      </div>
+      <div class="legal-divider"></div>
+      <div class="legal-section">
+        <h3>EU Consumer Rights</h3>
+        <p>Buyers within the European Union should be aware that the standard 14-day withdrawal right under Directive 2011/83/EU <em>does not apply</em> to goods made to the consumer's specifications or clearly personalised, nor to sealed goods which are not suitable for return for health or hygiene protection reasons once unsealed. Most pieces sold through this site fall within these exceptions. If you have a question about a specific piece, please enquire before purchasing.</p>
+      </div>
+    `
+  }
+}
+
+function showLegal(key) {
+  var page = LEGAL_PAGES[key]
+  if (!page) return
+  var titleEl   = document.getElementById('lg-title')
+  var contentEl = document.getElementById('lg-content')
+  if (titleEl)   titleEl.textContent = page.title
+  if (contentEl) contentEl.innerHTML = page.content
+  var overlay = document.getElementById('pg-legal')
+  if (overlay) {
+    overlay.classList.add('on')
+    var body = overlay.querySelector('.lg-body')
+    if (body) body.scrollTop = 0
+  }
+}
+
 // ==================== INIT ====================
 
 ;(function () {
