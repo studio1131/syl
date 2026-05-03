@@ -165,7 +165,7 @@ function buildPlay() {
           ge:       t.genre || '',
           dk:       !!t.dark,
           duration: t.duration || 0,
-          url:      t.audioUrl || ''
+          url:      t._id ? '/api/audio?id=' + encodeURIComponent(t._id) : ''
         }
       })
     : TRACKS_FALLBACK

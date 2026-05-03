@@ -40,8 +40,7 @@ export default async function handler(req, res) {
       }`),
 
       client.fetch(`*[_type == "track"] | order(order asc) {
-        _id, title, trackNumber, genre, duration, dark,
-        "audioUrl": audioFile.asset->url
+        _id, title, trackNumber, genre, duration, dark
       }`),
 
       client.fetch(`*[_type == "homepageImage"] | order(order asc) {
