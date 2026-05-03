@@ -474,7 +474,7 @@ function buildShop() {
     prod.dataset.index = i
 
     var visHtml = p.imageUrl
-      ? '<img src="' + esc(p.imageUrl) + '" alt="' + esc(p.imageAlt || p.name) + '" style="width:100%;height:220px;object-fit:cover;display:block;">'
+      ? '<img src="' + esc(p.imageUrl) + '" alt="' + esc(p.imageAlt || p.name) + '" style="width:100%;height:auto;display:block;">'
       : (typeof mkArt === 'function' ? mkArt(p.ai || 10, 300, 300) : '')
 
     prod.innerHTML =
@@ -508,7 +508,7 @@ function openRequestModal(idx) {
   var descEl  = document.getElementById('req-desc')
 
   if (currentProduct.imageUrl) {
-    imgEl.innerHTML = '<img src="' + esc(currentProduct.imageUrl) + '" alt="' + esc(currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;max-height:260px;object-fit:cover;display:block;">'
+    imgEl.innerHTML = '<img src="' + esc(currentProduct.imageUrl) + '" alt="' + esc(currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;height:auto;display:block;">'
   } else if (typeof mkArt === 'function') {
     imgEl.innerHTML = mkArt(currentProduct.ai || 10, 400, 240)
   } else {
