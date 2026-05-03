@@ -386,11 +386,12 @@ function buildArticles() {
   ACTIVE_ARTICLES = (SANITY_CONTENT && SANITY_CONTENT.posts && SANITY_CONTENT.posts.length)
     ? SANITY_CONTENT.posts.map(function (p, i) {
         return {
-          n:    pad2(i + 1),
-          ti:   p.title,
-          tg:   p.tag || '',
-          dt:   fmtDate(p.publishedAt),
-          body: portableTextToHtml(p.body) || ('<p>' + (p.excerpt || '') + '</p>')
+          n:       pad2(i + 1),
+          ti:      p.title,
+          tg:      p.tag || '',
+          dt:      fmtDate(p.publishedAt),
+          body:    portableTextToHtml(p.body) || ('<p>' + (p.excerpt || '') + '</p>'),
+          imgUrl:  p.imageUrl || ''
         }
       })
     : ARTICLES_FALLBACK
@@ -414,6 +415,16 @@ function buildArticles() {
 function openArticle(idx) {
   currentArticle = idx
   var a = ACTIVE_ARTICLES[idx]
+  var cover = document.getElementById('af-cover')
+  if (cover) {
+    if (a.imgUrl) {
+      cover.innerHTML = '<img src="' + esc(a.imgUrl) + '" alt="' + esc(a.ti) + '">'
+      cover.style.display = ''
+    } else {
+      cover.innerHTML = ''
+      cover.style.display = 'none'
+    }
+  }
   document.getElementById('af-meta').textContent  = (a.tg || '').toUpperCase() + ' · ' + (a.dt || '').toUpperCase()
   document.getElementById('af-title').textContent = a.ti
   document.getElementById('af-body').innerHTML    = a.body
@@ -694,7 +705,8 @@ function injectModalStyles() {
     .request-close{background:none;border:none;font-size:22px;color:var(--mid);cursor:pointer;padding:0;line-height:1;}
     .request-close:hover{color:var(--ink);}
     .request-body{padding:24px;}
-    .request-img{margin-bottom:16px;overflow:hidden;}
+    .request-img{margin-bottom:16px;}
+    .request-img img{width:100%;height:auto;display:block;}
     .request-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);margin:0 0 8px;}
     .request-subtitle{font-family:'Syne',sans-serif;font-size:.78rem;line-height:1.65;color:var(--mid);margin:0 0 24px;}
     .request-form{display:flex;flex-direction:column;gap:14px;}

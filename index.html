@@ -156,6 +156,7 @@ body.night .track.dk{background:#141210;}
 .af-body strong{font-weight:700;color:var(--ink);}
 .af-body h3{font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin:28px 0 10px;transition:color var(--ease);}
 .af-rule{width:32px;height:1px;background:var(--soft);margin:28px 0;transition:background var(--ease);}
+.af-cover{width:100%;margin-bottom:32px;}.af-cover img{width:100%;height:auto;display:block;filter:grayscale(1) brightness(.85);}
 .af-body p:first-child::first-letter{font-family:'Space Mono',monospace;font-size:3.2rem;font-weight:700;float:left;line-height:.8;margin-right:10px;margin-top:6px;color:var(--ink);}
 .af-next{display:flex;align-items:center;justify-content:space-between;margin-top:56px;padding-top:24px;border-top:var(--rule-s);cursor:none;transition:opacity .2s,border-color var(--ease);}
 .af-next:hover{opacity:.65;}
@@ -379,6 +380,7 @@ body.night .f-lm img{filter:brightness(0) invert(1);}
     <div class="art-full" id="art-full">
       <div class="art-inner">
         <button class="af-back" onclick="closeArticle()">Back to Fragments</button>
+        <div class="af-cover" id="af-cover"></div>
         <div class="af-meta" id="af-meta"></div>
         <h1 class="af-title" id="af-title"></h1>
         <div class="af-body" id="af-body"></div>
