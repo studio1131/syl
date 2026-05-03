@@ -305,10 +305,10 @@ var ARTICLES_FALLBACK = [
   {
     n:'01', ti:'On Silence as Material', tg:'Sound Theory', dt:'Dec 2024',
     body:`<p>Silence is not absence. It's the canvas on which sound becomes visible.</p>
-<p>When Cage sat in the anechoic chamber, he didn't find silence. He found his nervous system — the high whine of consciousness, the low rumble of blood. <em>The body refuses to be quiet.</em></p>
+<p>When Cage sat in the anechoic chamber, he didn't find silence. He found his nervous system: the high whine of consciousness, the low rumble of blood. <em>The body refuses to be quiet.</em></p>
 <h3>The Paradox</h3>
 <p>We call it "silence" when we mean "the sounds we've learned to ignore." The hum of refrigerators. The distant traffic.</p>
-<p>In my work, I don't use silence. I use <strong>controlled emptiness</strong> — space that has been cleared, intentionally.</p>
+<p>In my work, I don't use silence. I use <strong>controlled emptiness</strong>: space that has been cleared, intentionally.</p>
 <div class="af-rule"></div>
 <p>This is not minimalism. This is maximum attention to what persists when everything decorative has been stripped away.</p>`
   },
@@ -552,17 +552,17 @@ function createRequestModal() {
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">First Name <span style="color:var(--accent)">*</span></label>
-              <input type="text" class="form-input" name="firstName" required placeholder="—">
+              <input type="text" class="form-input" name="firstName" required placeholder="">
             </div>
             <div class="form-group">
               <label class="form-label">Last Name <span style="color:var(--accent)">*</span></label>
-              <input type="text" class="form-input" name="lastName" required placeholder="—">
+              <input type="text" class="form-input" name="lastName" required placeholder="">
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Email Address <span style="color:var(--accent)">*</span></label>
-            <input type="email" class="form-input" name="email" required placeholder="—">
+            <input type="email" class="form-input" name="email" required placeholder="">
           </div>
 
           <div class="form-group">
@@ -573,7 +573,7 @@ function createRequestModal() {
           <button type="submit" class="form-submit">Submit Request</button>
 
           <div class="form-success" id="req-success" style="display:none;">
-            <p><strong>Thank you.</strong> Your request has been received — I'll be in touch soon.</p>
+            <p><strong>Thank you.</strong> Your request has been received. I'll be in touch soon.</p>
           </div>
           <div class="form-error" id="req-error" style="display:none;">
             <p>Something went wrong. Please try again or email directly.</p>
@@ -674,7 +674,7 @@ function initContactForm() {
       setTimeout(function () { btn.innerHTML = origText; btn.disabled = false }, 4000)
     } catch (err) {
       console.error('Contact error:', err)
-      btn.textContent = 'Error — try again'
+      btn.textContent = 'Error. Try again.'
       btn.disabled    = false
       setTimeout(function () { btn.innerHTML = origText }, 3000)
     }
