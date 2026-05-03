@@ -514,17 +514,8 @@ function openRequestModal(idx) {
   var modal = document.getElementById('request-modal')
   if (!modal) { createRequestModal(); modal = document.getElementById('request-modal') }
 
-  var imgEl   = document.getElementById('req-img')
   var titleEl = document.getElementById('req-title')
   var descEl  = document.getElementById('req-desc')
-
-  if (currentProduct.imageUrl) {
-    imgEl.innerHTML = '<img src="' + esc(currentProduct.imageUrl) + '" alt="' + esc(currentProduct.imageAlt || currentProduct.name) + '" style="width:100%;height:auto;display:block;">'
-  } else if (typeof mkArt === 'function') {
-    imgEl.innerHTML = mkArt(currentProduct.ai || 10, 400, 240)
-  } else {
-    imgEl.innerHTML = ''
-  }
 
   titleEl.textContent = currentProduct.name
   descEl.textContent  = currentProduct.desc
@@ -552,7 +543,6 @@ function createRequestModal() {
         <button class="request-close" onclick="closeRequestModal()" aria-label="Close">×</button>
       </div>
       <div class="request-body">
-        <div class="request-img" id="req-img"></div>
         <h3 class="request-title" id="req-title"></h3>
         <p class="request-subtitle" id="req-desc"></p>
 
@@ -705,8 +695,6 @@ function injectModalStyles() {
     .request-close{background:none;border:none;font-size:22px;color:var(--mid);cursor:pointer;padding:0;line-height:1;}
     .request-close:hover{color:var(--ink);}
     .request-body{padding:24px;}
-    .request-img{margin-bottom:16px;}
-    .request-img img{width:100%;height:auto;display:block;}
     .request-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);margin:0 0 8px;}
     .request-subtitle{font-family:'Syne',sans-serif;font-size:.78rem;line-height:1.65;color:var(--mid);margin:0 0 24px;}
     .request-form{display:flex;flex-direction:column;gap:14px;}
