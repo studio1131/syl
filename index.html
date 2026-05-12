@@ -31,10 +31,9 @@ body.co #cur-t{opacity:1;}
 .pg.on{opacity:1;pointer-events:all;transform:translateY(0);}
 @media(max-width:768px){.pg{position:relative;inset:auto;display:none;transform:none;min-height:100vh;}.pg.on{display:flex;}}
 nav{flex-shrink:0;width:100%;height:var(--nav-h);display:flex;align-items:stretch;border-bottom:var(--rule);background:var(--bg);position:relative;z-index:200;transition:background var(--ease),border-color var(--ease);}
-.n-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);text-decoration:none;cursor:none;padding:0 16px 0 10px;display:flex;align-items:center;gap:10px;border-right:var(--rule);white-space:nowrap;flex-shrink:0;transition:color var(--ease),border-color var(--ease);}
-.n-mark{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.n-mark img{width:36px;height:36px;object-fit:contain;display:block;transition:filter var(--ease);}
-body.night .n-mark img{filter:brightness(0) invert(1);}
+.n-logo{text-decoration:none;cursor:none;padding:0 16px 0 14px;display:flex;align-items:center;border-right:var(--rule);flex-shrink:0;}
+.n-sig{height:24px;width:auto;display:block;object-fit:contain;transition:filter var(--ease);}
+body.night .n-sig{filter:invert(1);}
 .n-r{display:flex;align-items:stretch;margin-left:auto;overflow:hidden;}
 .nb{font-family:'Syne',sans-serif;font-weight:500;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);text-decoration:none;cursor:none;padding:0 14px;display:flex;align-items:center;border-left:var(--rule);white-space:nowrap;background:none;border-top:none;border-right:none;border-bottom:none;transition:color .2s,border-color var(--ease);flex-shrink:0;}
 .nb:hover,.nb.on{color:var(--ink);}
@@ -253,9 +252,9 @@ body.night .track.dk{background:#141210;}
 .ct-soc:hover .ct-ar{transform:translateX(5px);color:var(--ink);}
 .site-footer{position:fixed;bottom:0;left:0;right:0;z-index:300;height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-top:var(--rule-s);background:var(--bg);transition:background var(--ease),border-color var(--ease);gap:10px;}
 .f-lc{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.f-lm{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.f-lm img{width:20px;height:20px;object-fit:contain;display:block;transition:filter var(--ease);}
-body.night .f-lm img{filter:brightness(0) invert(1);}
+.f-lm{flex-shrink:0;display:flex;align-items:center;}
+.f-lm img{height:16px;width:auto;object-fit:contain;display:block;transition:filter var(--ease);}
+body.night .f-lm img{filter:invert(1);}
 .f-copy{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.07em;color:var(--mid);white-space:nowrap;transition:color var(--ease);}
 .f-links{display:flex;align-items:center;flex-wrap:nowrap;}
 .f-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--mid);text-decoration:none;cursor:none;padding:0 12px;border-left:var(--rule-s);transition:color .2s,border-color var(--ease);white-space:nowrap;}
@@ -516,7 +515,7 @@ body.night .f-lm img{filter:brightness(0) invert(1);}
 
 <div class="site-footer">
   <div class="f-lc">
-    <div class="f-lm"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAACaklEQVR42rVT30sUURQ+986Q64i5uxQUgZUMUk5KoBZBgakRQj3u/RdC9sV/IIZ9SHroqacQIirdakYCJyIoYRBhKQhfiqI0SGw3LJ39MXt3m92Ze3pRMHc1wu2D+3TOPff7zvdd0tvbq3R0dHjQKHR1de2DBoJWKhXS0IF/a0BEous6RUSKiGRPAw3DkAgh2He6+9bExJ1xQggahiHtdkeKRqOy4zhBHWZU0zQcGRw8vp7PTvIi7+/rP3M/Ho8XAIDOzc3hPzE0TZMQQjD9M3OzkC/Iskyb29pabxBCUNO0HaUTVVWblpaWvO1SY7GYeJK8d6WpudVy3YJfrVYhFFLktfXsiOM4LzVNI4yxGmXyji8RgqOjo8VIuO1jOBw+6fs+ONnc50zmRymZfCBisVj9Xaqq2rTdVQCAlG2r6XRaAQAyMHDp7NDQ5XMAICGu7Z+ZMdStvTsyRERimiZFROnp9OMXX1aW5dnZZ+eHh6++AQCYn3/Vnpx6nsoXXNe27W7TNBEABABgXVNM06SMsWDaeBTP5121XC4fe/9u8SEASLZtyyvLmUnPqxwRAk+8TqWuMcYCwzBoXZd1XaeMsQCLq4d4qXTdLRZFtVrxW1qUi2NjY0eloNwZjUYvyLLsoxAipIR0y7IOMMaEruu0ZuBmFG7fnRrnvBQRIgC/6stCBOC6bvvy99XD39IZcJyslMvlQJKkgwsLbxMA8EeMamLDGDvFOZcURSGcc6CUUs/zPvX09MDi4tfOIPglIpEIcM4hCIKqZVkfdnV5r6jJ4dZ9bCKRSOBGjdSpif/KkEKDQRVFkTe+UUPOb17CLKcmOHgdAAAAAElFTkSuQmCC" alt="SYLHERA"></div>
+    <div class="f-lm"><img src="/logo.png" alt="SYLHERA"></div>
     <span class="f-copy">&copy; 2026 SYLHERA. All rights reserved</span>
   </div>
   <nav class="f-links">
@@ -564,7 +563,7 @@ var NAV=[
 function buildNav(cid,active){
   var el=document.getElementById(cid);if(!el)return;
   var nid='nr-'+cid;
-  var h='<a class="n-logo" href="#" onclick="go(\'home\');return false"><span class="n-mark"><img src="'+LOGO_SRC+'" alt=""/></span>SYLHERA</a>';
+  var h='<a class="n-logo" href="#" onclick="go(\'home\');return false"><img class="n-sig" src="/logo.png" alt="SYLHERA"/></a>';
   h+='<div class="n-r" id="'+nid+'">';
   NAV.forEach(function(it){
     var on=it.id===active?' on':'';
