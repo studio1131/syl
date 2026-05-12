@@ -31,8 +31,8 @@ body.co #cur-t{opacity:1;}
 .pg.on{opacity:1;pointer-events:all;transform:translateY(0);}
 @media(max-width:768px){.pg{position:relative;inset:auto;display:none;transform:none;min-height:100vh;}.pg.on{display:flex;}}
 nav{flex-shrink:0;width:100%;height:var(--nav-h);display:flex;align-items:stretch;border-bottom:var(--rule);background:var(--bg);position:relative;z-index:200;transition:background var(--ease),border-color var(--ease);}
-.n-logo{text-decoration:none;cursor:none;padding:0 16px 0 14px;display:flex;align-items:center;border-right:var(--rule);flex-shrink:0;}
-.n-sig{height:24px;width:auto;display:block;object-fit:contain;transition:filter var(--ease);}
+.n-logo{text-decoration:none;cursor:none;padding:0 16px 0 10px;display:flex;align-items:center;gap:10px;border-right:var(--rule);white-space:nowrap;flex-shrink:0;}
+.n-mark{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}.n-mark img{width:36px;height:36px;object-fit:contain;display:block;transition:filter var(--ease);}body.night .n-mark img{filter:brightness(0) invert(1);}.n-sig{height:22px;width:auto;display:block;object-fit:contain;transition:filter var(--ease);}
 body.night .n-sig{filter:invert(1);}
 .n-r{display:flex;align-items:stretch;margin-left:auto;overflow:hidden;}
 .nb{font-family:'Syne',sans-serif;font-weight:500;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);text-decoration:none;cursor:none;padding:0 14px;display:flex;align-items:center;border-left:var(--rule);white-space:nowrap;background:none;border-top:none;border-right:none;border-bottom:none;transition:color .2s,border-color var(--ease);flex-shrink:0;}
@@ -563,7 +563,7 @@ var NAV=[
 function buildNav(cid,active){
   var el=document.getElementById(cid);if(!el)return;
   var nid='nr-'+cid;
-  var h='<a class="n-logo" href="#" onclick="go(\'home\');return false"><img class="n-sig" src="/logo.png" alt="SYLHERA"/></a>';
+  var h='<a class="n-logo" href="#" onclick="go(\'home\');return false"><span class="n-mark"><img src="'+LOGO_SRC+'" alt=""/></span><img class="n-sig" src="/logo.png" alt="SYLHERA"/></a>';
   h+='<div class="n-r" id="'+nid+'">';
   NAV.forEach(function(it){
     var on=it.id===active?' on':'';
